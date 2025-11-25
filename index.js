@@ -5,11 +5,10 @@ const cloudinary = require("cloudinary");
 const cookieparser = require("cookie-parser");
 const cors = require("cors");
 
-const {
-  PORT
-} = require("./utils/config");
+const { PORT } = require("./utils/config");
 const connectTodb = require("./dbConnection");
-// const productRouter = require("./routes/product.route");
+const userRouter = require("./routes/user.route");
+
 const app = express();
 const port = PORT;
 
@@ -30,7 +29,7 @@ app.get("/", (req, res) => {
   res.send(`<center><h1>Server is Started...</h1></center>`);
 });
 
-// app.use("/api/v1", productRouter);
+app.use("/api/v1", userRouter);
 
 app.listen(port, () => {
   console.log(`server is running on http://localhost:${port}`);
