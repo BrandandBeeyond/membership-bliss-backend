@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
   res.send(`<center><h1>Server is Started...</h1></center>`);
 });
 
-app.use("/api/v1", userRouter);
+app.use("/api/v1/user", userRouter);
 
 app.listen(port, () => {
   console.log(`server is running on http://localhost:${port}`);
