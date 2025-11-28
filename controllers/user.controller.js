@@ -39,7 +39,9 @@ const googleLogin = async (req, res) => {
       });
     }
 
-    return res.status(200).json({ success: true, user });
+    const token = user.getJWTtoken();
+
+    return res.status(200).json({ success: true, user, token });
   } catch (error) {
     return res.status(500).json({ message: "Google login failed" });
   }

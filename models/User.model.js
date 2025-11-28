@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
+const { JWT_SECRET, JWT_EXPIRES_IN } = require("../utils/config");
 
 const userSchema = new mongoose.Schema({
   fullname: {
@@ -46,6 +48,10 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
 });
+
+userSchema.methods.getJWTtoken = function () {
+  return jwt.sign({ id: this._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
 
 const User = mongoose.model("User", userSchema);
 
