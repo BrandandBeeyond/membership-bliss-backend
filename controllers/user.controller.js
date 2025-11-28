@@ -20,6 +20,9 @@ const googleLogin = async (req, res) => {
       audience: GOOGLE_CLIENT_ID,
     });
 
+    console.log("Received idToken:", idToken);
+    console.log("GOOGLE CLIENT ID:", GOOGLE_CLIENT_ID);
+
     const payload = ticket.getPayload();
 
     const googleId = payload.sub;
@@ -43,7 +46,9 @@ const googleLogin = async (req, res) => {
 
     return res.status(200).json({ success: true, user, token });
   } catch (error) {
-    return res.status(500).json({ message: "Google login failed" });
+    console.error("GOOGLE LOGIN ERROR:", error.message);
+    console.error("STACK:", error.stack);
+    return res.status(500).json({ message: error.message });
   }
 };
 
