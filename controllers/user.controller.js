@@ -142,4 +142,18 @@ const VerifyOtp = async (req, res) => {
   }
 };
 
-module.exports = { googleLogin, SendOtp, VerifyOtp };
+const logoutUser = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "user logged out success",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Logout failed",
+    });
+  }
+};
+
+module.exports = { googleLogin, SendOtp, VerifyOtp, logoutUser };
