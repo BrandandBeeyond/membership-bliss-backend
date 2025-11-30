@@ -13,7 +13,10 @@ const {
 } = require("./utils/config");
 const connectTodb = require("./dbConnection");
 const userRouter = require("./routes/user.route");
-const { membershipCategoryRouter } = require("./routes/membershipcategory.route");
+const {
+  membershipCategoryRouter,
+} = require("./routes/membershipcategory.route");
+const { membershipPlanRouter } = require("./routes/membershipPlan.route");
 
 const app = express();
 const port = PORT;
@@ -37,6 +40,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/category", membershipCategoryRouter);
+app.use("/api/v1/categoryplan", membershipPlanRouter);
 
 app.listen(port, () => {
   console.log(`server is running on http://localhost:${port}`);
