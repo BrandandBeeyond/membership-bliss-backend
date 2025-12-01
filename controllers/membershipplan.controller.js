@@ -3,42 +3,65 @@ const MembershipPlan = require("../models/MembershipPlan.model");
 
 const createMembershipPlan = async (req, res) => {
   try {
-    const {
+    let {
       categoryId,
       name,
       price,
       validityinDays,
+      policyDetails,
       benefits,
       usageLimit,
       discountDetails,
       offers,
     } = req.body;
 
-    const category = await MembershipCategory.findById(categoryId);
+    if (!categoryId || !name || !price) {
+      return res.status(400).json({
+        success: false,
+        message: "categoryId, name and price are required",
+      });
+    }
 
-    if (!category) {
+    const categoryExists = await MembershipCategory.findById(categoryId);
+
+    if (!categoryExists) {
       return res
         .status(404)
         .json({ success: false, message: "Membership category not found" });
     }
 
-    const plan = new MembershipPlan({
+    if (typeof benefits === "string") {
+      benefits = benefits.split(",").map((item) => item.trim());
+    }
+
+    if (typeof policyDetails === "string") {
+      policyDetails = policyDetails.split(",").map((item) => item.trim());
+    }
+
+    if (typeof discountDetails === "string") {
+      discountDetails = discountDetails.split(",").map((item) => item.trim());
+    }
+
+    if (typeof offers === "string") {
+      offers = JSON.parse(offers);
+    }
+
+    const newPlan = new MembershipPlan({
       categoryId,
       name,
       price,
-      validityinDays,
-      benefits,
+      validityinDays: validityinDays || 365,
+      policyDetails: policyDetails || [],
+      benefits: benefits || [],
       usageLimit,
-      discountDetails,
-      offers,
+      discountDetails: discountDetails || [],
+      offers: offers || [],
     });
-
-    await plan.save();
 
     return res.status(201).json({
       success: true,
       message: "Membership plan created successfully",
-      membershipPlan,
+      membershipPlan: await newPlan.save(),
     });
   } catch (error) {
     res

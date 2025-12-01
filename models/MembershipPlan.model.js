@@ -1,32 +1,37 @@
 const mongoose = require("mongoose");
 
-
 const offerSchema = new mongoose.Schema({
-    offertitle: {
-        type: String,
-        required: true,
+  offertitle: {
+    type: String,
+    required: true,
+  },
+  offerDescription: {
+    type: String,
+    default: "",
+  },
+  offerThumbnail: {
+    public_id: {
+      type: String,
+      required: true,
     },
-    offerDescription: {
-        type: String,
-        default: "",
+    url: {
+      type: String,
+      required: true,
     },
-    offerThumbnail: {
-        type: String,
-        default: null,
-        required: false,
-    },
-    offerIncludes: {
-        type: [String],
-        default: [],
-    },
-    inventory:{
-        type: Number,
-        default: null,
-    },
-    usedCount:{
-        type: Number,
-        default: 0,
-    }
+  },
+  offerIncludes: {
+    type: [String],
+    default: [],
+  },
+  inventory: {
+    type: Number,
+    default: null,
+    required: false,
+  },
+  usedCount: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const membershipPlanSchema = new mongoose.Schema({
@@ -46,22 +51,27 @@ const membershipPlanSchema = new mongoose.Schema({
   validityinDays: {
     type: Number,
     required: true,
+    default: 365,
   },
   benefits: {
     type: [String],
     default: [],
+  },
+  policyDetails: {
+    type: [String],
+    default: "",
   },
   usageLimit: {
     type: Number,
     default: null,
   },
   discountDetails: {
-    type: String,
-    default: "",
+    type: [String],
+    default: null,
   },
-  offers:{
-      type: [offerSchema],
-        default: [],
+  offers: {
+    type: [offerSchema],
+    default: [],
   },
   isActive: {
     type: Boolean,
