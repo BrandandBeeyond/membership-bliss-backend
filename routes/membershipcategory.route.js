@@ -1,9 +1,14 @@
+const upload = require("../config/multerConfig");
 const {
   createMembershipCategory,
 } = require("../controllers/membershipcategory.controller");
 
 const membershipCategoryRouter = require("express").Router();
 
-membershipCategoryRouter.post("/add", createMembershipCategory);
+membershipCategoryRouter.post(
+  "/add",
+  upload.fields([{ name: "thumbnail", maxCount: 1 }]),
+  createMembershipCategory
+);
 
 module.exports = { membershipCategoryRouter };
