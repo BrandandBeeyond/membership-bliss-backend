@@ -34,6 +34,21 @@ const offerSchema = new mongoose.Schema({
   },
 });
 
+const policySchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  detail: {
+    type: String,
+    default: "",
+  },
+  points: {
+    type: [String],
+    default: [],
+  },
+});
+
 const membershipPlanSchema = new mongoose.Schema({
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -58,8 +73,8 @@ const membershipPlanSchema = new mongoose.Schema({
     default: [],
   },
   policyDetails: {
-    type: [String],
-    default: "",
+    type: [policySchema],
+    default: [],
   },
   usageLimit: {
     type: Number,
