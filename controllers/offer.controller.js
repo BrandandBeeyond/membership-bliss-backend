@@ -64,7 +64,7 @@ const createOfferCategory = async (req, res) => {
 
 const getAllOffers = async (req, res) => {
   try {
-    const offers = await Offer.find().sort({ createdAt: -1 });
+    const offers = await OfferCategory.find().sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
