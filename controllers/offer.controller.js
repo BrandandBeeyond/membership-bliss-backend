@@ -1,18 +1,68 @@
 const Offer = require("../models/Offer.model");
+const Cloudinary = require("cloudinary");
 
 const createOffers = async (req, res) => {
   try {
-    const offer = await Offer.create(req.body);
+    const {
+      offertitle,
+      offerDescription,
+      offerIncludes,
+      inventory,
+      usedCount,
+    } = req.body;
 
-    res.status(201).json({
+    if (!offertitle) {
+      return res.status(400).json({
+        success: false,
+        message: "offertitle is required",
+      });
+    }
+
+    if (!req.files || !req.files.offerThumbnail) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Please upload offer thumbnail" });
+    }
+
+    const thumbnailResult = await Cloudinary.v2.uploader.upload(
+      req.files.offerThumbnail[0].path,
+      {
+        folder: "offers/thumbnails",
+      }
+    );
+
+    let includesArray = [];
+
+    if (offerIncludes) {
+      if (Array.isArray(offerIncludes)) {
+        includesArray = offerIncludes;
+      } else {
+        includesArray = offerIncludes.split(",").map((i) => i.trim());
+      }
+    }
+
+    const offer = await Offer.create({
+      offertitle: offertitle.trim(),
+      offerDescription: offerDescription || null,
+      offerThumbnail: {
+        public_id: thumbnailResult.public_id,
+        url: thumbnailResult.secure_url,
+      },
+      offerIncludes: includesArray,
+      inventory: inventory || null,
+      usedCount: usedCount || 0,
+    });
+    return res.status(200).json({
       success: true,
       message: "Offer created successfully",
-      offer,
+      newOffer: offer,
     });
   } catch (error) {
+    console.error("Offer creation failed:", error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Internal Server Error",
+      error: error.message,
     });
   }
 };

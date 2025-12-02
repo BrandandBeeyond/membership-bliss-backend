@@ -12,11 +12,11 @@ const offerSchema = new mongoose.Schema({
   offerThumbnail: {
     public_id: {
       type: String,
-      required: true,
+      required: [true, "Please upload a thumbnail image"],
     },
     url: {
       type: String,
-      required: true,
+      required: [true, "Please upload a thumbnail image"],
     },
   },
   offerIncludes: {

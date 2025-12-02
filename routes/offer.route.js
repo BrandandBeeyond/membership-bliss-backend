@@ -1,3 +1,4 @@
+const upload = require("../config/multerConfig");
 const {
   createOffers,
   getOfferById,
@@ -5,7 +6,11 @@ const {
 
 const offerRouter = require("express").Router();
 
-offerRouter.post("/add", createOffers);
+offerRouter.post(
+  "/add",
+  upload.fields([{ name: "offerThumbnail", maxCount: 1 }]),
+  createOffers
+);
 offerRouter.get("/:id", getOfferById);
 
 module.exports = { offerRouter };

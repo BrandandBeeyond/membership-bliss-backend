@@ -13,7 +13,7 @@ const membershipCategorySchema = new mongoose.Schema({
   thumbnail: {
     public_id: {
       type: String,
-      required: [false, "PlPlease upload a thumbnail image"],
+      required: [false, "Please upload a thumbnail image"],
     },
     url: {
       type: String,
