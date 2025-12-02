@@ -1,13 +1,24 @@
 const mongoose = require("mongoose");
 
-const offerSchema = new mongoose.Schema({
-  offertitle: {
+const offerItemSchema = new mongoose.Schema({
+  name: {
     type: String,
     required: true,
   },
-  offerDescription: {
+  inventory: {
+    type: Number,
+    default: 0,
+  },
+  usedCount: {
+    type: Number,
+    default: 0,
+  },
+});
+
+const offerCategorySchema = new mongoose.Schema({
+  title: {
     type: String,
-    default: null,
+    required: true,
   },
   offerThumbnail: {
     public_id: {
@@ -19,8 +30,8 @@ const offerSchema = new mongoose.Schema({
       required: [true, "Please upload a thumbnail image"],
     },
   },
-  offerIncludes: {
-    type: [String],
+  items: {
+    type: [offerItemSchema],
     default: [],
   },
   inventory: {
@@ -34,6 +45,6 @@ const offerSchema = new mongoose.Schema({
   },
 });
 
-const Offer = mongoose.model("Offer", offerSchema);
+const OfferCategory = mongoose.model("OfferCategory", offerCategorySchema);
 
-module.exports = Offer;
+module.exports = OfferCategory;

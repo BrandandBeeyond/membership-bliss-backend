@@ -1,61 +1,56 @@
-const Offer = require("../models/Offer.model");
+const OfferCategory = require("../models/Offercategory.model");
 const Cloudinary = require("cloudinary");
 
-const createOffers = async (req, res) => {
+const createOfferCategory = async (req, res) => {
   try {
-    const {
-      offertitle,
-      offerDescription,
-      offerIncludes,
-      inventory,
-      usedCount,
-    } = req.body;
+    const { title, items } = req.body;
 
-    if (!offertitle) {
+    if (!title) {
       return res.status(400).json({
         success: false,
-        message: "offertitle is required",
+        message: "title is required",
       });
     }
 
     if (!req.files || !req.files.offerThumbnail) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Please upload offer thumbnail" });
+      return res.status(400).json({
+        success: false,
+        message: "Please upload offer category thumbnail",
+      });
     }
 
     const thumbnailResult = await Cloudinary.v2.uploader.upload(
       req.files.offerThumbnail[0].path,
       {
-        folder: "offers/thumbnails",
+        folder: "offers/category",
       }
     );
 
-    let includesArray = [];
+    let itemsArray = [];
 
-    if (offerIncludes) {
-      if (Array.isArray(offerIncludes)) {
-        includesArray = offerIncludes;
-      } else {
-        includesArray = offerIncludes.split(",").map((i) => i.trim());
-      }
+    if (items) {
+      const parsedItems = typeof items === "string" ? JSON.parse(items) : items;
+
+      itemsArray = parsedItems.map((item) => ({
+        name: item.name,
+        inventory: item.inventory || 0,
+        usedCount: item.usedCount || 0,
+      }));
     }
 
-    const offer = await Offer.create({
-      offertitle: offertitle.trim(),
-      offerDescription: offerDescription || null,
-      offerThumbnail: {
+    const category = await OfferCategory.create({
+      title,
+      thumbnail: {
         public_id: thumbnailResult.public_id,
         url: thumbnailResult.secure_url,
       },
-      offerIncludes: includesArray,
-      inventory: inventory || null,
-      usedCount: usedCount || 0,
+      items: itemsArray,
     });
+
     return res.status(200).json({
       success: true,
       message: "Offer created successfully",
-      newOffer: offer,
+      category,
     });
   } catch (error) {
     console.error("Offer creation failed:", error);
@@ -108,4 +103,4 @@ const getOfferById = async (req, res) => {
   }
 };
 
-module.exports = { createOffers, getAllOffers, getOfferById };
+module.exports = { createOfferCategory, getAllOffers, getOfferById };
