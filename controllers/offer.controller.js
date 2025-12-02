@@ -12,7 +12,7 @@ const createOfferCategory = async (req, res) => {
       });
     }
 
-    if (!req.files || !req.files.thumbnail) {
+    if (!req.files || !req.files.thumbnail || !req.files.thumbnail[0]) {
       return res.status(400).json({
         success: false,
         message: "Please upload offer category thumbnail",
