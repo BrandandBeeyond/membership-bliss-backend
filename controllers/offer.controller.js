@@ -12,7 +12,7 @@ const createOfferCategory = async (req, res) => {
       });
     }
 
-    if (!req.files || !req.files.offerThumbnail) {
+    if (!req.files || !req.files.thumbnail) {
       return res.status(400).json({
         success: false,
         message: "Please upload offer category thumbnail",
@@ -20,7 +20,7 @@ const createOfferCategory = async (req, res) => {
     }
 
     const thumbnailResult = await Cloudinary.v2.uploader.upload(
-      req.files.offerThumbnail[0].path,
+      req.files.thumbnail[0].path,
       {
         folder: "offers/category",
       }

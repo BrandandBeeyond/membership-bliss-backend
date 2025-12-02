@@ -8,7 +8,7 @@ const offerRouter = require("express").Router();
 
 offerRouter.post(
   "/add",
-  upload.fields([{ name: "offerThumbnail", maxCount: 1 }]),
+  upload.fields([{ name: "thumbnail", maxCount: 1 }]),
   createOfferCategory
 );
 offerRouter.get("/:id", getOfferById);

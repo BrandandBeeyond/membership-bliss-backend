@@ -20,7 +20,7 @@ const offerCategorySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  offerThumbnail: {
+  thumbnail: {
     public_id: {
       type: String,
       required: [true, "Please upload a thumbnail image"],
