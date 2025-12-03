@@ -52,7 +52,11 @@ const createMembershipPlan = async (req, res) => {
       offers = JSON.parse(offers);
     }
 
-    if (!req.files || !req.files[images]?.length) {
+    if (
+      !req.files ||
+      !req.files["images"] ||
+      req.files["images"].length === 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "At least one image is required",
