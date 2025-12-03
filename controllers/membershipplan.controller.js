@@ -23,12 +23,10 @@ const createMembershipPlan = async (req, res) => {
     }
 
     if (name) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Membership with this name already exists",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Membership with this name already exists",
+      });
     }
 
     const categoryExists = await MembershipCategory.findById(categoryId);
@@ -50,13 +48,34 @@ const createMembershipPlan = async (req, res) => {
     }
 
     if (typeof policyDetails === "string") {
-      policyDetails = policyDetails
-        .split(",")
-        .map((item) => ({ title: item.trim() }));
-    } else if (Array.isArray(policyDetails)) {
-      policyDetails = policyDetails.map((item) => ({
-        title: item.trim ? item.trim() : item,
-      }));
+      try {
+        
+        const parsed = JSON.parse(policyDetails);
+
+        policyDetails = parsed.map((item) => ({
+          title: item.title ? item.title.trim() : item.trim(),
+        }));
+      } catch (err) {
+       
+        let cleaned = policyDetails
+          .replace(/^\[/, "") 
+          .replace(/\]$/, "") 
+          .trim();
+
+       
+        cleaned = cleaned.split(/}\s*,\s*{/).map((block) => {
+          let text = block
+            .replace("{", "")
+            .replace("}", "")
+            .replace(/"title":/g, "")
+            .replace(/"/g, "")
+            .trim();
+
+          return { title: text };
+        });
+
+        policyDetails = cleaned;
+      }
     }
 
     if (typeof discountDetails === "string") {
