@@ -1,3 +1,4 @@
+const upload = require("../config/multerConfig");
 const {
   createMembershipPlan,
   getallMembershipPlans,
@@ -6,7 +7,11 @@ const {
 
 const membershipPlanRouter = require("express").Router();
 
-membershipPlanRouter.post("/add", createMembershipPlan);
+membershipPlanRouter.post(
+  "/add",
+  upload.fields([{ name: "carouselImages", maxCount: 5 }]),
+  createMembershipPlan
+);
 membershipPlanRouter.post("/", getallMembershipPlans);
 membershipPlanRouter.post("/:id", getMemberShipById);
 
