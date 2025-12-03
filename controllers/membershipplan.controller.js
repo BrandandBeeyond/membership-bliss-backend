@@ -22,6 +22,15 @@ const createMembershipPlan = async (req, res) => {
       });
     }
 
+    if (name) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Membership with this name already exists",
+        });
+    }
+
     const categoryExists = await MembershipCategory.findById(categoryId);
 
     if (!categoryExists) {
@@ -33,7 +42,6 @@ const createMembershipPlan = async (req, res) => {
     if (typeof benefits === "string") {
       let cleaned = benefits.replace(/[\[\]]/g, "");
 
-   
       cleaned = cleaned
         .split(/"\s*"/)
         .map((item) => item.replace(/"/g, "").trim());
