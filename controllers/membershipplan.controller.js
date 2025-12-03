@@ -83,7 +83,6 @@ const createMembershipPlan = async (req, res) => {
       validityinDays: validityinDays || 365,
       policyDetails: policyDetails || [],
       benefits: benefits || [],
-      usageLimit,
       discountDetails: discountDetails || [],
       offers: offers || [],
       images: planImages,
