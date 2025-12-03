@@ -57,7 +57,7 @@ const getAllCategories = async (req, res) => {
   try {
     const allcategories = await MembershipCategory.find();
 
-    if (!categories) {
+    if (!allcategories) {
       return res.status(400).json({
         success: false,
         message: "No categories found for memberships",
