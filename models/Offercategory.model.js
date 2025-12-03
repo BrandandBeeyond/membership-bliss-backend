@@ -8,6 +8,7 @@ const offerItemSchema = new mongoose.Schema({
   description: {
     type: String,
     required: false,
+    default: "",
   },
   inventory: {
     type: Number,
