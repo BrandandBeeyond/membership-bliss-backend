@@ -10,7 +10,6 @@ const createMembershipPlan = async (req, res) => {
       validityinDays,
       policyDetails,
       benefits,
-      usageLimit,
       discountDetails,
       offers,
     } = req.body;
@@ -35,7 +34,13 @@ const createMembershipPlan = async (req, res) => {
     }
 
     if (typeof policyDetails === "string") {
-      policyDetails = policyDetails.split(",").map((item) => item.trim());
+      policyDetails = policyDetails
+        .split(",")
+        .map((item) => ({ title: item.trim() }));
+    } else if (Array.isArray(policyDetails)) {
+      policyDetails = policyDetails.map((item) => ({
+        title: item.trim ? item.trim() : item,
+      }));
     }
 
     if (typeof discountDetails === "string") {
@@ -48,7 +53,7 @@ const createMembershipPlan = async (req, res) => {
 
     const newPlan = new MembershipPlan({
       categoryId,
-      name,
+      name: name.trim(),
       price,
       validityinDays: validityinDays || 365,
       policyDetails: policyDetails || [],
@@ -58,10 +63,12 @@ const createMembershipPlan = async (req, res) => {
       offers: offers || [],
     });
 
+    await newPlan.save();
+
     return res.status(201).json({
       success: true,
       message: "Membership plan created successfully",
-      membershipPlan: await newPlan.save(),
+      membershipPlan: newPlan,
     });
   } catch (error) {
     res
