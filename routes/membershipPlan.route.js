@@ -12,7 +12,7 @@ membershipPlanRouter.post(
   upload.fields([{ name: "images", maxCount: 5 }]),
   createMembershipPlan
 );
-membershipPlanRouter.post("/", getallMembershipPlans);
-membershipPlanRouter.post("/:id", getMemberShipById);
+membershipPlanRouter.get("/getall", getallMembershipPlans);
+membershipPlanRouter.get("/:id", getMemberShipById);
 
 module.exports = { membershipPlanRouter };
