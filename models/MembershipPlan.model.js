@@ -26,7 +26,7 @@ const membershipPlanSchema = new mongoose.Schema({
     required: true,
     default: 365,
   },
-  carouselImages: [
+  images: [
     {
       public_id: {
         type: String,

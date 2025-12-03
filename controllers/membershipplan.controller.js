@@ -52,7 +52,7 @@ const createMembershipPlan = async (req, res) => {
       offers = JSON.parse(offers);
     }
 
-    if (!req.files || !req.files[carouselImages]?.length) {
+    if (!req.files || !req.files[images]?.length) {
       return res.status(400).json({
         success: false,
         message: "At least one image is required",
@@ -61,7 +61,7 @@ const createMembershipPlan = async (req, res) => {
 
     const planImages = [];
 
-    for (const imageFile of req.files["carouselImages"]) {
+    for (const imageFile of req.files["images"]) {
       const imageResult = await Cloudinary.v2.uploader.upload(imageFile.path, {
         folder: "plan/membershipcarousel",
       });
@@ -82,7 +82,7 @@ const createMembershipPlan = async (req, res) => {
       usageLimit,
       discountDetails: discountDetails || [],
       offers: offers || [],
-      carouselImages: planImages,
+      images: planImages,
     });
 
     await newPlan.save();
