@@ -82,7 +82,7 @@ const getOfferById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const offer = await Offer.findById(id);
+    const offer = await OfferCategory.findById(id);
 
     if (!offer) {
       return res.status(404).json({
