@@ -4,7 +4,7 @@ const policySchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
-  }
+  },
 });
 
 const membershipPlanSchema = new mongoose.Schema({
@@ -26,6 +26,18 @@ const membershipPlanSchema = new mongoose.Schema({
     required: true,
     default: 365,
   },
+  carouselImages: [
+    {
+      public_id: {
+        type: String,
+        required: [true, "Please upload a thumbnail image"],
+      },
+      url: {
+        type: String,
+        required: [true, "Please upload a thumbnail image"],
+      },
+    },
+  ],
   benefits: {
     type: [String],
     default: [],

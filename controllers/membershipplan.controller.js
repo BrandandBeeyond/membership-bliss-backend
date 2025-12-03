@@ -1,5 +1,6 @@
 const MembershipCategory = require("../models/MembershipCategory.model");
 const MembershipPlan = require("../models/MembershipPlan.model");
+const Cloudinary = require("cloudinary");
 
 const createMembershipPlan = async (req, res) => {
   try {
@@ -51,6 +52,26 @@ const createMembershipPlan = async (req, res) => {
       offers = JSON.parse(offers);
     }
 
+    if (!req.files || !req.files[carouselImages]?.length) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one image is required",
+      });
+    }
+
+    const planImages = [];
+
+    for (const imageFile of req.files["carouselImages"]) {
+      const imageResult = await Cloudinary.v2.uploader.upload(imageFile.path, {
+        folder: "plan/membershipcarousel",
+      });
+
+      planImages.push({
+        public_id: imageResult.public_id,
+        url: imageResult.secure_url,
+      });
+    }
+
     const newPlan = new MembershipPlan({
       categoryId,
       name: name.trim(),
@@ -61,6 +82,7 @@ const createMembershipPlan = async (req, res) => {
       usageLimit,
       discountDetails: discountDetails || [],
       offers: offers || [],
+      carouselImages: planImages,
     });
 
     await newPlan.save();
