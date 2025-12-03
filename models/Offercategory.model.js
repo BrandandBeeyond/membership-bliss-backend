@@ -5,6 +5,10 @@ const offerItemSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  description: {
+    type: String,
+    required: false,
+  },
   inventory: {
     type: Number,
     default: 0,

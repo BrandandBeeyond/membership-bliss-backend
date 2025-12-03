@@ -3,7 +3,7 @@ const Cloudinary = require("cloudinary");
 
 const createOfferCategory = async (req, res) => {
   try {
-    const { title, items } = req.body;
+    const { title, description, items } = req.body;
 
     if (!title) {
       return res.status(400).json({
@@ -40,6 +40,7 @@ const createOfferCategory = async (req, res) => {
 
     const category = await OfferCategory.create({
       title,
+      description,
       thumbnail: {
         public_id: thumbnailResult.public_id,
         url: thumbnailResult.secure_url,
