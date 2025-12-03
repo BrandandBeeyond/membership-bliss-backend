@@ -31,7 +31,14 @@ const createMembershipPlan = async (req, res) => {
     }
 
     if (typeof benefits === "string") {
-      benefits = benefits.split(",").map((item) => item.trim());
+      let cleaned = benefits.replace(/[\[\]]/g, "");
+
+   
+      cleaned = cleaned
+        .split(/"\s*"/)
+        .map((item) => item.replace(/"/g, "").trim());
+
+      benefits = cleaned.filter((item) => item.length > 0);
     }
 
     if (typeof policyDetails === "string") {
