@@ -22,13 +22,6 @@ const createMembershipPlan = async (req, res) => {
       });
     }
 
-    if (name) {
-      return res.status(400).json({
-        success: false,
-        message: "Membership with this name already exists",
-      });
-    }
-
     const categoryExists = await MembershipCategory.findById(categoryId);
 
     if (!categoryExists) {
@@ -49,20 +42,17 @@ const createMembershipPlan = async (req, res) => {
 
     if (typeof policyDetails === "string") {
       try {
-        
         const parsed = JSON.parse(policyDetails);
 
         policyDetails = parsed.map((item) => ({
           title: item.title ? item.title.trim() : item.trim(),
         }));
       } catch (err) {
-       
         let cleaned = policyDetails
-          .replace(/^\[/, "") 
-          .replace(/\]$/, "") 
+          .replace(/^\[/, "")
+          .replace(/\]$/, "")
           .trim();
 
-       
         cleaned = cleaned.split(/}\s*,\s*{/).map((block) => {
           let text = block
             .replace("{", "")
@@ -107,6 +97,17 @@ const createMembershipPlan = async (req, res) => {
       planImages.push({
         public_id: imageResult.public_id,
         url: imageResult.secure_url,
+      });
+    }
+
+    const membershipPlanExist = await MembershipPlan.findOne({
+      name: name.trim(),
+    });
+
+    if (membershipPlanExist) {
+      return res.status(400).json({
+        success: false,
+        message: "Membership plan with this name already exists",
       });
     }
 
