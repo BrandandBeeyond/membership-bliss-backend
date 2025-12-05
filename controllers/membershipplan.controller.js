@@ -112,6 +112,19 @@ const createMembershipPlan = async (req, res) => {
       });
     }
 
+    const thumbnailFile = req.files["thumbnail"][0];
+    const thumbnailUpload = await Cloudinary.v2.uploader.upload(
+      thumbnailFile.path,
+      {
+        folder: "plan/membershipthumbnail",
+      }
+    );
+
+    const thumbnail = {
+      public_id: thumbnailUpload.public_id,
+      url: thumbnailUpload.secure_url,
+    };
+
     const membershipPlanExist = await MembershipPlan.findOne({
       name: name.trim(),
     });
