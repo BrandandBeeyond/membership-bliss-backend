@@ -13,9 +13,10 @@ const createMembershipPlan = async (req, res) => {
       benefits,
       discountDetails,
       offers,
+      colorScheme,
     } = req.body;
 
-    if (!categoryId || !name || !price) {
+    if (!categoryId || !name || !price || !colorScheme) {
       return res.status(400).json({
         success: false,
         message: "categoryId, name and price are required",
@@ -78,6 +79,17 @@ const createMembershipPlan = async (req, res) => {
 
     if (
       !req.files ||
+      !req.files["thumbnail"] ||
+      req.files["thumbnail"].length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Thumbnail is required",
+      });
+    }
+
+    if (
+      !req.files ||
       !req.files["images"] ||
       req.files["images"].length === 0
     ) {
@@ -114,6 +126,8 @@ const createMembershipPlan = async (req, res) => {
     const newPlan = new MembershipPlan({
       categoryId,
       name: name.trim(),
+      thumbnail,
+      colorScheme,
       price,
       validityinDays: validityinDays || 365,
       policyDetails: policyDetails || [],

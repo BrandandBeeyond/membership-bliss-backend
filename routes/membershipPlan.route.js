@@ -9,7 +9,10 @@ const membershipPlanRouter = require("express").Router();
 
 membershipPlanRouter.post(
   "/add",
-  upload.fields([{ name: "images", maxCount: 5 }]),
+  upload.fields([
+    { name: "thumbnail", maxCount: 1 },
+    { name: "images", maxCount: 5 },
+  ]),
   createMembershipPlan
 );
 membershipPlanRouter.get("/getall", getallMembershipPlans);

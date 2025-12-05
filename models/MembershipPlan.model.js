@@ -17,6 +17,20 @@ const membershipPlanSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  thumbnail: {
+    public_id: {
+      type: String,
+      required: [true, "Please upload a thumbnail image"],
+    },
+    url: {
+      type: String,
+      required: [true, "Please upload a thumbnail image"],
+    },
+  },
+  colorScheme: {
+    type: String,
+    required: true,
+  },
   price: {
     type: Number,
     required: true,
