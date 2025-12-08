@@ -207,6 +207,23 @@ const getMemberShipById = async (req, res) => {
   }
 };
 
+
+const getMembershipPlansByIOffersId=async(req,res)=>{
+   try {
+      const {id} = req.params;
+
+      const plan = await MembershipPlan.findById(id).populate(
+        "categoryId",
+      ).populate({
+        path:"offers",
+        model:"OfferCategory",
+        select:"title thumbnail items"
+      })
+   } catch (error) {
+    
+   }
+}
+
 module.exports = {
   createMembershipPlan,
   getallMembershipPlans,

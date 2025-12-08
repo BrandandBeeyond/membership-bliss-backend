@@ -3,12 +3,19 @@ const Cloudinary = require("cloudinary");
 
 const createOfferCategory = async (req, res) => {
   try {
-    const { title, description, items } = req.body;
+    const { title, type, items } = req.body;
 
     if (!title) {
       return res.status(400).json({
         success: false,
         message: "title is required",
+      });
+    }
+
+    if (!type || ["value", "discount"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "type is required and must be either 'value' or 'discount'",
       });
     }
 
@@ -33,6 +40,8 @@ const createOfferCategory = async (req, res) => {
 
       itemsArray = parsedItems.map((item) => ({
         name: item.name,
+        description: item.description || "",
+        worth: item.worth,
         inventory: item.inventory || 0,
         usedCount: item.usedCount || 0,
       }));

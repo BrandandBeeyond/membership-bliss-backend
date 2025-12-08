@@ -10,6 +10,10 @@ const offerItemSchema = new mongoose.Schema({
     required: false,
     default: "",
   },
+  worth:{
+    type: Number,
+    required: true,
+  },
   inventory: {
     type: Number,
     default: 0,
@@ -23,6 +27,11 @@ const offerItemSchema = new mongoose.Schema({
 const offerCategorySchema = new mongoose.Schema({
   title: {
     type: String,
+    required: true,
+  },
+  type: {
+    type: String,
+    enum: ["value", "discount"],
     required: true,
   },
   thumbnail: {
