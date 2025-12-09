@@ -216,7 +216,7 @@ const getMembershipPlansByOffersId = async (req, res) => {
       .populate({
         path: "offers",
         model: "OfferCategory",
-        select: "title thumbnail items",
+        select: "title thumbnail items type",
       });
 
     if (!plan) {
