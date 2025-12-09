@@ -207,27 +207,40 @@ const getMemberShipById = async (req, res) => {
   }
 };
 
+const getMembershipPlansByOffersId = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-const getMembershipPlansByIOffersId=async(req,res)=>{
-   try {
-      const {id} = req.params;
-
-      const plan = await MembershipPlan.findById(id).populate(
-        "categoryId",
-      ).populate({
-        path:"offers",
-        model:"OfferCategory",
-        select:"title thumbnail items"
+    const plan = await MembershipPlan.findById(id)
+      .populate("categoryId")
+      .populate({
+        path: "offers",
+        model: "OfferCategory",
+        select: "title thumbnail items",
       });
 
-      
-   } catch (error) {
-    
-   }
-}
+    if (!plan) {
+      return res
+        .status(400)
+        .json({ success: false, message: "plan not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      plan,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
 
 module.exports = {
   createMembershipPlan,
   getallMembershipPlans,
   getMemberShipById,
+  getMembershipPlansByOffersId,
 };

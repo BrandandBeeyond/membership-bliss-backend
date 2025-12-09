@@ -3,6 +3,7 @@ const {
   createMembershipPlan,
   getallMembershipPlans,
   getMemberShipById,
+  getMembershipPlansByOffersId,
 } = require("../controllers/membershipplan.controller");
 
 const membershipPlanRouter = require("express").Router();
@@ -17,5 +18,6 @@ membershipPlanRouter.post(
 );
 membershipPlanRouter.get("/getall", getallMembershipPlans);
 membershipPlanRouter.get("/:id", getMemberShipById);
+membershipPlanRouter.get("/details/:id", getMembershipPlansByOffersId);
 
 module.exports = { membershipPlanRouter };
