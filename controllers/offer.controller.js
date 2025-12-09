@@ -50,6 +50,7 @@ const createOfferCategory = async (req, res) => {
     const category = await OfferCategory.create({
       title,
       description,
+      type,
       thumbnail: {
         public_id: thumbnailResult.public_id,
         url: thumbnailResult.secure_url,
