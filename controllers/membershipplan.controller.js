@@ -218,7 +218,9 @@ const getMembershipPlansByIOffersId=async(req,res)=>{
         path:"offers",
         model:"OfferCategory",
         select:"title thumbnail items"
-      })
+      });
+
+      
    } catch (error) {
     
    }
