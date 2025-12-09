@@ -227,7 +227,7 @@ const getMembershipPlansByOffersId = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      plans:plan,
+      planoffers: plan.offers,
     });
   } catch (error) {
     console.log(error);
