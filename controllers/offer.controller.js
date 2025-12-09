@@ -3,7 +3,7 @@ const Cloudinary = require("cloudinary");
 
 const createOfferCategory = async (req, res) => {
   try {
-    const { title, type, items } = req.body;
+    const { title, type, items,description } = req.body;
 
     if (!title) {
       return res.status(400).json({
