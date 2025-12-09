@@ -12,7 +12,7 @@ const createOfferCategory = async (req, res) => {
       });
     }
 
-    if (!type || ["value", "discount"].includes(type)) {
+    if (!type || !["value", "discount"].includes(type)) {
       return res.status(400).json({
         success: false,
         message: "type is required and must be either 'value' or 'discount'",
