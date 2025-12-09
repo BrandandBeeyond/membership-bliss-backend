@@ -18,6 +18,6 @@ membershipPlanRouter.post(
 );
 membershipPlanRouter.get("/getall", getallMembershipPlans);
 membershipPlanRouter.get("/:id", getMemberShipById);
-membershipPlanRouter.get("/details/:id", getMembershipPlansByOffersId);
+membershipPlanRouter.get("/plan/:id/offers", getMembershipPlansByOffersId);
 
 module.exports = { membershipPlanRouter };
