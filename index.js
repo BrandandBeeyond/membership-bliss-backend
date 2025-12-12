@@ -18,6 +18,7 @@ const {
 } = require("./routes/membershipcategory.route");
 const { membershipPlanRouter } = require("./routes/membershipPlan.route");
 const { offerRouter } = require("./routes/offer.route");
+const { membershipbookingRouter } = require("./routes/membershipbooking.route");
 
 const app = express();
 const port = PORT;
@@ -42,6 +43,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/category", membershipCategoryRouter);
 app.use("/api/v1/categoryplan", membershipPlanRouter);
+app.use("/api/v1/bookings", membershipbookingRouter);
 app.use("/api/v1/offers", offerRouter);
 
 app.listen(port, () => {
