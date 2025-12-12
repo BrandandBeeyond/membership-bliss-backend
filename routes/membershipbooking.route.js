@@ -4,6 +4,6 @@ const {
 
 const membershipbookingRouter = require("express").Router();
 
-membershipbookingRouter.post("/add", VerifyPaymentandCreateBooking);
+membershipbookingRouter.post("/booking/create", VerifyPaymentandCreateBooking);
 
 module.exports = { membershipbookingRouter };
