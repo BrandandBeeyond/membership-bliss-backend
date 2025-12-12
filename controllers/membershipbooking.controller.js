@@ -26,15 +26,17 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       });
     }
 
-    const generatedSignature = crypto
+    const body = razorpay_orderId + "|" + razorpay_paymentId;
+
+    const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(razorpay_orderId + "|" + razorpay_paymentId)
       .digest("hex");
 
-    if (generatedSignature !== razorpay_signature) {
+    if (expectedSignature !== razorpay_signature) {
       return res
         .status(400)
-        .json({ success: false, message: "Payment verification failed" });
+        .json({ success: false, message: "Invalid Payment Signature" });
     }
 
     const startDate = new Date();
