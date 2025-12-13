@@ -12,24 +12,32 @@ const createPaymentOrder = async (req, res) => {
 
     console.log("payment amount", amount);
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Amount is required to create payment order",
-      });
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid amount" });
     }
 
     const options = {
-      amount: amount * 100,
+      amount: Number(amount) * 100,
       currency: "INR",
       receipt: crypto.randomBytes(10).toString("hex"),
     };
 
-    const order = await razorpayInstance.orders.create(options);
+    razorpayInstance.orders.create(options, async (error, order) => {
+      if (error) {
+        console.error("Error creating order:", error);
+        return res
+          .status(400)
+          .json({ success: false, message: "Failed to create order" });
+      }
+
+      res.status(201).json({ success: true, data: order });
+    });
 
     return res.status(200).json({
       success: true,
-      order,
+      data: order,
     });
   } catch (error) {
     console.error("Error creating payment order:", error);
