@@ -11,6 +11,8 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       memberDetails,
     } = req.body;
 
+  
+
     const userId = req.user._id;
 
     if (

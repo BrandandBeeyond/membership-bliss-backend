@@ -10,6 +10,8 @@ const createPaymentOrder = async (req, res) => {
   try {
     const { amount } = req.body;
 
+    console.log("payment amount", amount);
+
     if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
