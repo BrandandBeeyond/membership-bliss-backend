@@ -1,4 +1,5 @@
 const Razorpay = require("razorpay");
+const crypto = require("crypto");
 
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -19,7 +20,7 @@ const createPaymentOrder = async (req, res) => {
     const options = {
       amount: amount * 100,
       currency: "INR",
-      receipt: `receipt_order_${Date.now()}`,
+      receipt: crypto.randomBytes(10).toString("hex"),
     };
 
     const order = await razorpayInstance.orders.create(options);
