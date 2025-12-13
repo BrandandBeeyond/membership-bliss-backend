@@ -24,20 +24,11 @@ const createPaymentOrder = async (req, res) => {
       receipt: crypto.randomBytes(10).toString("hex"),
     };
 
-    razorpayInstance.orders.create(options, async (error, order) => {
-      if (error) {
-        console.error("Error creating order:", error);
-        return res
-          .status(400)
-          .json({ success: false, message: "Failed to create order" });
-      }
-
-      res.status(201).json({ success: true, data: order });
-    });
+    const order = await razorpayInstance.orders.create(options);
 
     return res.status(200).json({
       success: true,
-      data: order,
+      order,
     });
   } catch (error) {
     console.error("Error creating payment order:", error);
