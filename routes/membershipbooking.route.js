@@ -1,5 +1,6 @@
 const {
   VerifyPaymentandCreateBooking,
+  getbookedMembershipDetail,
 } = require("../controllers/membershipbooking.controller");
 const { isAuth } = require("../middlewares/middleware");
 
@@ -10,5 +11,7 @@ membershipbookingRouter.post(
   isAuth,
   VerifyPaymentandCreateBooking
 );
+
+membershipbookingRouter.get("/booking/my", getbookedMembershipDetail);
 
 module.exports = { membershipbookingRouter };

@@ -11,8 +11,6 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       memberDetails,
     } = req.body;
 
-  
-
     const userId = req.user._id;
 
     if (
@@ -71,5 +69,38 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
   }
 };
 
+const getbookedMembershipDetail = async (req, res) => {
+  try {
+    const userId = req.user._id;
 
-module.exports = { VerifyPaymentandCreateBooking };
+    const membership = await MembershipBooking.findOne({
+      userId,
+      status: "Active",
+      paymentStatus: "Completed",
+      endDate: { $gte: new Date() },
+    })
+      .populate("membershipPlanId")
+      .sort({ createdAt: -1 });
+
+    if (!membership) {
+      return res.status(200).json({
+        success: true,
+        membership: null,
+        message: "No active membership found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      bookedmembership: membership,
+    });
+  } catch (error) {
+    console.error("Error fetching membership details:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch membership details",
+    });
+  }
+};
+
+module.exports = { VerifyPaymentandCreateBooking, getbookedMembershipDetail };

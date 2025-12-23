@@ -13,7 +13,7 @@ const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const googleLogin = async (req, res) => {
   try {
-    console.log('REQ BODY:', req.body);
+    console.log("REQ BODY:", req.body);
     const { idToken } = req.body;
 
     const ticket = await client.verifyIdToken({
@@ -21,7 +21,8 @@ const googleLogin = async (req, res) => {
       audience: GOOGLE_CLIENT_ID,
     });
 
-
+    console.log("Received idToken:", idToken);
+    console.log("GOOGLE CLIENT ID:", GOOGLE_CLIENT_ID);
 
     const payload = ticket.getPayload();
 
