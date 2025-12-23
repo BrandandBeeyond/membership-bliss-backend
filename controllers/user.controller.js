@@ -21,8 +21,7 @@ const googleLogin = async (req, res) => {
       audience: GOOGLE_CLIENT_ID,
     });
 
-    console.log("Received idToken:", idToken);
-    console.log("GOOGLE CLIENT ID:", GOOGLE_CLIENT_ID);
+
 
     const payload = ticket.getPayload();
 
