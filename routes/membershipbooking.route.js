@@ -12,6 +12,6 @@ membershipbookingRouter.post(
   VerifyPaymentandCreateBooking
 );
 
-membershipbookingRouter.get("/booking/my", getbookedMembershipDetail);
+membershipbookingRouter.get("/booking/my", isAuth, getbookedMembershipDetail);
 
 module.exports = { membershipbookingRouter };

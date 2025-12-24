@@ -71,6 +71,9 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
 
 const getbookedMembershipDetail = async (req, res) => {
   try {
+
+    console.log("user exists",req.user);
+    
     const userId = req.user._id;
 
     const booking = await MembershipBooking.findOne({
@@ -84,7 +87,7 @@ const getbookedMembershipDetail = async (req, res) => {
 
     if (!booking) {
       return res.status(200).json({
-        success: false,
+        success: true,
         hasMembership: false,
         booking: null,
       });
