@@ -72,7 +72,7 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
 const getbookedMembershipDetail = async (req, res) => {
   try {
 
-    console.log("user exists",req.user);
+    
     
     const userId = req.user._id;
 
