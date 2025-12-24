@@ -73,7 +73,7 @@ const getbookedMembershipDetail = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const membership = await MembershipBooking.findOne({
+    const booking = await MembershipBooking.findOne({
       userId,
       status: "Active",
       paymentStatus: "Completed",
@@ -82,17 +82,17 @@ const getbookedMembershipDetail = async (req, res) => {
       .populate("membershipPlanId")
       .sort({ createdAt: -1 });
 
-    if (!membership) {
+    if (!booking) {
       return res.status(200).json({
-        success: true,
-        membership: null,
-        message: "No active membership found",
+        success: false,
+        hasMembership: false,
+        booking: null,
       });
     }
-
     return res.status(200).json({
       success: true,
-      bookedmembership: membership,
+      hasMembership: true,
+      booking: booking,
     });
   } catch (error) {
     console.error("Error fetching membership details:", error);
