@@ -109,23 +109,72 @@ const sendOTP = async (req, res) => {
   }
 };
 
-
-const verifyOTP=async(req,res)=>{
+const verifyOTP = async (req, res) => {
   try {
-      const {phone,otp} = req.body;
+    const { phone, otp } = req.body;
 
-      if (!phone || !otp) {
+    if (!phone || !otp) {
       return res.status(400).json({
         success: false,
         message: "Phone & OTP required",
       });
     }
 
-    
+    const otpRecord = await Otp.findOne({ phone });
+
+    if (!otpRecord) {
+      return res.status(404).json({
+        success: false,
+        message: "No OTP request found for this phone number",
+      });
+    }
+
+    if (otpRecord.otp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    if (otpRecord.otpExpiry < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired",
+      });
+    }
+
+    await Otp.deleteOne({ phone });
+
+    let user = await User.findOne({ phone });
+
+    const isNewUser = !user;
+
+    if (isNewUser) {
+      user = await User.create({
+        phone,
+        loginType: "otp",
+        isVerified: true,
+        profileCompleted: false,
+      });
+    }
+
+    const token = user.getJWTtoken();
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully",
+      user,
+      token,
+      isNewUser,
+    });
   } catch (error) {
-    
+    console.error("Verify OTP Error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify OTP",
+    });
   }
-}
+};
 
 const logoutUser = async (req, res) => {
   try {
@@ -141,4 +190,4 @@ const logoutUser = async (req, res) => {
   }
 };
 
-module.exports = { googleLogin, sendOTP, logoutUser };
+module.exports = { googleLogin, sendOTP, verifyOTP, logoutUser };
