@@ -63,32 +63,37 @@ const sendOTP = async (req, res) => {
   try {
     const { phone } = req.body;
 
-    console.log("entering phone",phone);
-    
+    console.log("entering phone", phone);
 
-    if (!phone) {
-      if (!phone)
-        return res
-          .status(400)
-          .json({ success: false, message: "Phone required" });
-    }
+    if (!phone)
+      return res
+        .status(400)
+        .json({ success: false, message: "Phone required" });
 
     const otp = generateOTP();
     const otpExpiry = Date.now() + 5 * 60 * 1000;
 
-    await User.findOneAndUpdate(
-      { phone },
-      { $set: { phone, loginType: "otp", otp, otpExpiry } },
-      { upsert: true }
-    );
-
-    const msg = `Your OTP is ${otp} to log in to the Touchwood Membership App. Wishing you calm moments in`;
+    const msg = `Your OTP is ${otp} to log in to the Touchwood Bliss Membership App. Wishing you calm moments and nature-inspired living.
+`;
 
     const url = `https://kutility.org/app/smsapi/index.php?key=${OTP_API_KEY}&campaign=${OTP_CAMPAIGN}&routeid=${OTP_ROUTE}&type=text&contacts=${phone}&senderid=${OTP_SENDER}&msg=${encodeURIComponent(
       msg
     )}&template_id=${OTP_TEMPLATE}&pe_id=${OTP_PE_ID}`;
 
     const response = await axios.get(url);
+
+    if (!response?.data) {
+      return res.status(502).json({
+        success: false,
+        message: "SMS vendor did not return a valid response",
+      });
+    }
+
+    await User.findOneAndUpdate(
+      { phone },
+      { $set: { phone, loginType: "otp", otp, otpExpiry } },
+      { upsert: true, new: true }
+    );
 
     return res.json({
       success: true,
