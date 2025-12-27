@@ -109,6 +109,24 @@ const sendOTP = async (req, res) => {
   }
 };
 
+
+const verifyOTP=async(req,res)=>{
+  try {
+      const {phone,otp} = req.body;
+
+      if (!phone || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone & OTP required",
+      });
+    }
+
+    
+  } catch (error) {
+    
+  }
+}
+
 const logoutUser = async (req, res) => {
   try {
     return res.status(200).json({
