@@ -146,9 +146,8 @@ const verifyOTP = async (req, res) => {
 
     let user = await User.findOne({ phone });
 
-    const isNewUser = !user;
-
-    if (isNewUser) {
+    if (!user) {
+     
       user = await User.create({
         phone,
         loginType: "otp",
@@ -156,9 +155,13 @@ const verifyOTP = async (req, res) => {
         profileCompleted: false,
       });
     } else {
+     
       user.isVerified = true;
-      if (user.profileCompleted === undefined) user.profileCompleted = false;
-      await user.save({ validateBeforeSave: false });
+      if (user.profileCompleted === undefined) {
+        user.profileCompleted = false;
+      }
+
+      await user.save(); // normal save, no validation bypass needed
     }
 
     const token = user.getJWTtoken();
