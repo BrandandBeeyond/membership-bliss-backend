@@ -90,7 +90,7 @@ const sendOTP = async (req, res) => {
       });
     }
 
-    await Otp.findByIdAndUpdate(
+    await Otp.findOneAndUpdate(
       { phone },
       { otp, otpExpiry },
       { upsert: true, new: true, setDefaultsOnInsert: true }
