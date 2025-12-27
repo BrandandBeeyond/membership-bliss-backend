@@ -5,11 +5,12 @@ const { JWT_SECRET, JWT_EXPIRES_IN } = require("../utils/config");
 const userSchema = new mongoose.Schema({
   fullname: {
     type: String,
-    required: true,
+    required: false,
   },
   email: {
     type: String,
     unique: true,
+    required: false,
   },
   phone: {
     type: String,
