@@ -147,7 +147,6 @@ const verifyOTP = async (req, res) => {
     let user = await User.findOne({ phone });
 
     if (!user) {
-     
       user = await User.create({
         phone,
         loginType: "otp",
@@ -155,7 +154,6 @@ const verifyOTP = async (req, res) => {
         profileCompleted: false,
       });
     } else {
-     
       user.isVerified = true;
       if (user.profileCompleted === undefined) {
         user.profileCompleted = false;
@@ -171,7 +169,6 @@ const verifyOTP = async (req, res) => {
       message: "OTP verified successfully",
       user,
       token,
-      isNewUser,
     });
   } catch (error) {
     console.error("Verify OTP Error:", error.message);
