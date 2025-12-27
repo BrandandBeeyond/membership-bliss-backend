@@ -114,4 +114,4 @@ const logoutUser = async (req, res) => {
   }
 };
 
-module.exports = { googleLogin, sendOTP, VerifyOtp, logoutUser };
+module.exports = { googleLogin, sendOTP, logoutUser };
