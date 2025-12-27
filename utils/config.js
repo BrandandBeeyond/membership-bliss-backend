@@ -10,6 +10,13 @@ const CLOUDINARY_NAME = process.env.CLOUDINARY_NAME;
 const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
 const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
 
+const OTP_API_KEY = process.env.OTP_API_KEY;
+const OTP_CAMPAIGN = process.env.OTP_CAMPAIGN;
+const OTP_ROUTE = process.env.OTP_ROUTE;
+const OTP_SENDER = process.env.OTP_SENDER;
+const OTP_TEMPLATE = process.env.OTP_TEMPLATE;
+const OTP_PE_ID = process.env.OTP_PE_ID;
+
 module.exports = {
   PORT,
   MONGO_URI,
@@ -22,4 +29,10 @@ module.exports = {
   CLOUDINARY_NAME,
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET,
+  OTP_API_KEY,
+  OTP_CAMPAIGN,
+  OTP_ROUTE,
+  OTP_SENDER,
+  OTP_TEMPLATE,
+  OTP_PE_ID,
 };

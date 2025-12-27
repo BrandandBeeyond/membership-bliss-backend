@@ -1,15 +1,21 @@
 const { OAuth2Client } = require("google-auth-library");
 const {
   GOOGLE_CLIENT_ID,
-  MSG91_TEMPLATE_ID,
-  MSG91_AUTH_KEY,
   JWT_SECRET,
+  OTP_API_KEY,
+  OTP_CAMPAIGN,
+  OTP_ROUTE,
+  OTP_SENDER,
+  OTP_TEMPLATE,
+  OTP_PE_ID,
 } = require("../utils/config");
 const User = require("../models/User.model");
 const { default: axios } = require("axios");
 const jwt = require("jsonwebtoken");
 
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
 
 const googleLogin = async (req, res) => {
   try {
@@ -53,93 +59,44 @@ const googleLogin = async (req, res) => {
   }
 };
 
-const SendOtp = async (req, res) => {
+const sendOTP = async (req, res) => {
   try {
     const { phone } = req.body;
 
     if (!phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Phone required",
-      });
+      if (!phone)
+        return res
+          .status(400)
+          .json({ success: false, message: "Phone required" });
     }
+
+    const otp = generateOTP();
+    const otpExpiry = Date.now() + 5 * 60 * 1000;
 
     await User.findOneAndUpdate(
       { phone },
-      { $set: { phone, loginType: "otp" } },
-      { upsert: true, new: true }
+      { $set: { phone, loginType: "otp", otp, otpExpiry } },
+      { upsert: true }
     );
 
-    const url = "https://api.msg91.com/api/v5/otp";
+    const msg = `Your OTP is ${otp} to log in to the Touchwood Membership App. Wishing you calm moments in`;
 
-    const payload = {
-      mobile: `91${phone}`,
-      template_id: MSG91_TEMPLATE_ID,
-    };
+    const url = `https://kutility.org/app/smsapi/index.php?key=${OTP_API_KEY}&campaign=${OTP_CAMPAIGN}&routeid=${OTP_ROUTE}&type=text&contacts=${phone}&senderid=${OTP_SENDER}&msg=${encodeURIComponent(
+      msg
+    )}&template_id=${OTP_TEMPLATE}&pe_id=${OTP_PE_ID}`;
 
-    const headers = {
-      authkey: MSG91_AUTH_KEY,
-      "Content-Type": "application/json",
-    };
+    const response = await axios.get(url);
 
-    const response = await axios.post(url, payload, { headers });
-
-    if (response.data.type === "success" || response.data.type === "otp") {
-      return res.json({ success: true, message: "OTP sent" });
-    } else {
-      return res.status(500).json({ success: false, detail: response.data });
-    }
+    return res.json({
+      success: true,
+      message: "OTP sent successfully",
+      vendorResponse: response.data,
+    });
   } catch (error) {
-    console.error("sendOtp err:", err.response?.data || err.message);
-    return res.status(500).json({ message: "OTP send failed" });
-  }
-};
-
-const VerifyOtp = async (req, res) => {
-  try {
-    const { phone, otp } = req.body;
-
-    if (!phone || !otp)
-      return res.status(400).json({ message: "Phone & OTP required" });
-
-    const url = "https://api.msg91.com/api/v5/otp/verify";
-
-    const payload = {
-      mobile: `91${phone}`,
-      otp: otp,
-    };
-
-    const headers = {
-      authkey: MSG91_AUTH_KEY,
-      "Content-Type": "application/json",
-    };
-
-    const response = await axios.post(url, payload, { headers });
-
-    if (response.data.type === "success") {
-      let user = await User.findOne({ phone });
-
-      if (!user) {
-        user = await User.create({
-          phone,
-          loginType: "otp",
-        });
-      }
-
-      user.isVerified = true;
-      await user.save();
-
-      const token = jwt.sign({ user: user._id }, JWT_SECRET, {
-        expiresIn: "30d",
-      });
-
-      return res.status(200).json({ success: true, user, token });
-    } else {
-      return res.status(400).json({ success: false, detail: response.data });
-    }
-  } catch (error) {
-    console.error("verifyOtp err:", err.response?.data || err.message);
-    return res.status(500).json({ message: "OTP verification failed" });
+    console.error("Send OTP Error:", err.message);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to send OTP" });
   }
 };
 
@@ -157,4 +114,4 @@ const logoutUser = async (req, res) => {
   }
 };
 
-module.exports = { googleLogin, SendOtp, VerifyOtp, logoutUser };
+module.exports = { googleLogin, sendOTP, VerifyOtp, logoutUser };
