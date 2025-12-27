@@ -157,6 +157,10 @@ const verifyOTP = async (req, res) => {
         isVerified: true,
         profileCompleted: false,
       });
+    } else {
+      user.isVerified = true;
+      if (user.profileCompleted === undefined) user.profileCompleted = false;
+      await user.save();
     }
 
     const token = user.getJWTtoken();
