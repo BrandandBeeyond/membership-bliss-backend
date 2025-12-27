@@ -63,6 +63,9 @@ const sendOTP = async (req, res) => {
   try {
     const { phone } = req.body;
 
+    console.log("entering phone",phone);
+    
+
     if (!phone) {
       if (!phone)
         return res
@@ -93,7 +96,7 @@ const sendOTP = async (req, res) => {
       vendorResponse: response.data,
     });
   } catch (error) {
-    console.error("Send OTP Error:", err.message);
+    console.error("Send OTP Error:", error.message);
     return res
       .status(500)
       .json({ success: false, message: "Failed to send OTP" });
