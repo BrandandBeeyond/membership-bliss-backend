@@ -151,6 +151,8 @@ const verifyOTP = async (req, res) => {
     if (isNewUser) {
       user = await User.create({
         phone,
+        fullname: "",
+        email: "",
         loginType: "otp",
         isVerified: true,
         profileCompleted: false,
