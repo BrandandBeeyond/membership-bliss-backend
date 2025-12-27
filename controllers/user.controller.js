@@ -93,7 +93,7 @@ const sendOTP = async (req, res) => {
     await Otp.findByIdAndUpdate(
       { phone },
       { otp, otpExpiry },
-      { upsert: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
     return res.json({
