@@ -12,6 +12,7 @@ const {
 const User = require("../models/User.model");
 const { default: axios } = require("axios");
 const jwt = require("jsonwebtoken");
+const Otp = require("../models/Otp.model");
 
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -89,10 +90,10 @@ const sendOTP = async (req, res) => {
       });
     }
 
-    await User.findOneAndUpdate(
+    await Otp.findByIdAndUpdate(
       { phone },
-      { $set: { phone, loginType: "otp", otp, otpExpiry } },
-      { upsert: true, new: true }
+      { otp, otpExpiry },
+      { upsert: true }
     );
 
     return res.json({
