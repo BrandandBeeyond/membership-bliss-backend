@@ -28,6 +28,15 @@ const userSchema = new mongoose.Schema({
     trim: true,
     default: "",
   },
+  state: {
+    type: String,
+    trim: true,
+    default: "",
+  },
+  profileCompleted: {
+    type: Boolean,
+    default: false,
+  },
   loginType: {
     type: String,
     enum: ["otp", "google"],
