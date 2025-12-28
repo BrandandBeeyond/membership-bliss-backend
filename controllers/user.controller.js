@@ -229,7 +229,7 @@ const completeUserProfile = async (req, res) => {
       user: {
         _id: user._id,
         phone: user.phone,
-        fullName: user.fullName,
+        fullname: user.fullname,
         email: user.email,
         gender: user.gender,
         state: user.state,
