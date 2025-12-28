@@ -191,6 +191,61 @@ const verifyOTP = async (req, res) => {
   }
 };
 
+const completeUserProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const { firstname, lastname, email, gender, state, city } = req.body;
+
+    if (!firstname || !lastname || !email || !city) {
+      return res.status(400).json({
+        success: false,
+        message: "First name, last name, email & city are required",
+      });
+    }
+
+    const fullname = `${firstname} ${lastname}`.trim();
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.fullname = fullname;
+    user.email = email;
+    user.gender = gender || "";
+    user.state = state || "";
+    user.city = city;
+    user.profileCompleted = true;
+
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Profile completed successfully",
+      user: {
+        _id: user._id,
+        phone: user.phone,
+        fullName: user.fullName,
+        email: user.email,
+        gender: user.gender,
+        state: user.state,
+        city: user.city,
+        profileCompleted: user.profileCompleted,
+      },
+    });
+  } catch (error) {
+    console.error("Complete Profile Error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to complete profile",
+    });
+  }
+};
+
 const logoutUser = async (req, res) => {
   try {
     return res.status(200).json({
@@ -205,4 +260,10 @@ const logoutUser = async (req, res) => {
   }
 };
 
-module.exports = { googleLogin, sendOTP, verifyOTP, logoutUser };
+module.exports = {
+  googleLogin,
+  sendOTP,
+  verifyOTP,
+  completeUserProfile,
+  logoutUser,
+};
