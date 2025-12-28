@@ -151,15 +151,20 @@ const verifyOTP = async (req, res) => {
         phone,
         loginType: "otp",
         isVerified: true,
+        fullname: "",
+        email: "",
+        city: "",
         profileCompleted: false,
       });
     } else {
       user.isVerified = true;
-      if (user.profileCompleted === undefined) {
-        user.profileCompleted = false;
-      }
 
-      await user.save(); // normal save, no validation bypass needed
+      const hasProfile =
+        user.fullname?.trim() && user.email?.trim() && user.city?.trim();
+
+      user.profileCompleted = Boolean(hasProfile);
+
+      await user.save();
     }
 
     const token = user.getJWTtoken();
@@ -167,7 +172,14 @@ const verifyOTP = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "OTP verified successfully",
-      user,
+      user: {
+        _id: user._id,
+        phone: user.phone,
+        fullname: user.fullname,
+        email: user.email,
+        city: user.city,
+        profileCompleted: user.profileCompleted,
+      },
       token,
     });
   } catch (error) {
