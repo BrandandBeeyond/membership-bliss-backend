@@ -28,7 +28,7 @@ const createUpdates = async (req, res) => {
     );
 
     const thumbnailResult = await Cloudinary.v2.uploader.upload(
-      req.files.thumbanil[0].path,
+      req.files.thumbnail[0].path,
       {
         folder: "updates/thumbnail",
       }
