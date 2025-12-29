@@ -9,7 +9,7 @@ const updatesSchema = new mongoose.Schema(
       enum: ["whats_new", "events_retreats"],
       required: true,
     },
-    icon: {
+    image: {
       public_id: {
         type: String,
         required: [false, "Please upload a icon image"],
@@ -22,11 +22,11 @@ const updatesSchema = new mongoose.Schema(
     thumbnail: {
       public_id: {
         type: String,
-        required: [false, "Please upload a icon image"],
+        required: [false, "Please upload a thumbnail image"],
       },
       url: {
         type: String,
-        required: [false, "Please upload a icon image"],
+        required: [false, "Please upload a thumbnail image"],
       },
     },
     updatedOn: { type: Date, default: Date.now },

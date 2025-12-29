@@ -20,13 +20,6 @@ const createUpdates = async (req, res) => {
         .json({ success: false, message: "this update already exists" });
     }
 
-    const iconResult = await Cloudinary.v2.uploader.upload(
-      req.files.icon[0].path,
-      {
-        folder: "updates/icon",
-      }
-    );
-
     const thumbnailResult = await Cloudinary.v2.uploader.upload(
       req.files.thumbnail[0].path,
       {
@@ -34,17 +27,26 @@ const createUpdates = async (req, res) => {
       }
     );
 
+    const imageResult = await Cloudinary.v2.uploader.upload(
+      req.files.image[0].path,
+      {
+        folder: "updates/images",
+      }
+    );
+
+    
     const newUpdate = await Updates.create({
       title: title.trim(),
       description,
-      icon: {
-        public_id: iconResult.public_id,
-        url: iconResult.secure_url,
-      },
       thumbnail: {
         public_id: thumbnailResult.public_id,
         url: thumbnailResult.secure_url,
       },
+      image: {
+        public_id: imageResult.public_id,
+        url: imageResult.secure_url,
+      },
+      category,
     });
 
     return res.status(200).json({
