@@ -27,14 +27,6 @@ const createUpdates = async (req, res) => {
       }
     );
 
-    const imageResult = await Cloudinary.v2.uploader.upload(
-      req.files.image[0].path,
-      {
-        folder: "updates/images",
-      }
-    );
-
-    
     const newUpdate = await Updates.create({
       title: title.trim(),
       description,
@@ -42,10 +34,7 @@ const createUpdates = async (req, res) => {
         public_id: thumbnailResult.public_id,
         url: thumbnailResult.secure_url,
       },
-      image: {
-        public_id: imageResult.public_id,
-        url: imageResult.secure_url,
-      },
+
       category,
     });
 

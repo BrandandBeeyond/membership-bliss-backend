@@ -8,10 +8,7 @@ const updatesRouter = require("express").Router();
 
 updatesRouter.post(
   "/addupdate",
-  upload.fields([
-    { name: "thumbnail", maxCount: 1 },
-    { name: "image", maxCount: 1 },
-  ]),
+  upload.fields([{ name: "thumbnail", maxCount: 1 }]),
   createUpdates
 );
 updatesRouter.get("/getall", getAllUpdates);
