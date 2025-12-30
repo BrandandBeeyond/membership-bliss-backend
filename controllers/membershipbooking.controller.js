@@ -63,11 +63,11 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
 
     const qrVerificationURL = `${APP_BASE_URL}/bookings/qr/verify/${qrTrackingToken}`;
 
-    console.log("QR Verification URL:", qrVerificationURL);
+    
 
     const qrCodeUrl = await Qrcode.toDataURL(qrVerificationURL);
 
-    console.log("Generated QR Code URL", qrCodeUrl);
+    
 
     const newbooking = await MembershipBooking.create({
       userId,
