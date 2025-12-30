@@ -86,7 +86,7 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       physicalCardRequested: false,
       physicalCardIssued: false,
       qrTrackingToken,
-      qrCodeUrl,
+      qrcodeURL:qrCodeUrl,
     });
 
     return res.status(200).json({
