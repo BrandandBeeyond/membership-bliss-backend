@@ -76,9 +76,35 @@ const membershipBookingSchema = new mongoose.Schema({
     type: [usedOffersSchema],
     default: [],
   },
+
+  arrivalDate: {
+    type: Date,
+    default: null,
+  },
+  arrivalStatus: {
+    type: String,
+    enum: ["Pending", "Approved", "Rejected", "NotRequested"],
+    default: "NotRequested",
+  },
+
+  physicalCardRequested: {
+    type: Boolean,
+    default: false,
+  },
+
+  physicalCardIssued: {
+    type: Boolean,
+    default: false,
+  },
+
   qrcodeURL: {
     type: String,
     default: "",
+  },
+
+  qrTrackingToken: {
+    type: String,
+    unique: true,
   },
   createdAt: {
     type: Date,

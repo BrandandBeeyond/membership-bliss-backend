@@ -16,6 +16,7 @@ const OTP_ROUTE = process.env.OTP_ROUTE;
 const OTP_SENDER = process.env.OTP_SENDER;
 const OTP_TEMPLATE = process.env.OTP_TEMPLATE;
 const OTP_PE_ID = process.env.OTP_PE_ID;
+const APP_BASE_URL = process.env.APP_BASE_URL;
 
 module.exports = {
   PORT,
@@ -35,4 +36,5 @@ module.exports = {
   OTP_SENDER,
   OTP_TEMPLATE,
   OTP_PE_ID,
+  APP_BASE_URL,
 };

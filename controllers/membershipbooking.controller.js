@@ -1,5 +1,8 @@
 const MembershipBooking = require("../models/MembershipBooking.model");
 const crypto = require("crypto");
+const { v4: uuidv4 } = require("uuid");
+const { APP_BASE_URL } = require("../utils/config");
+const Qrcode = require("qrcode");
 
 const VerifyPaymentandCreateBooking = async (req, res) => {
   try {
@@ -39,9 +42,28 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
         .json({ success: false, message: "Invalid Payment Signature" });
     }
 
+    const existingActive = await MembershipBooking.findOne({
+      userId,
+      status: "Active",
+    });
+
+    if (existingActive) {
+      return res.status(409).json({
+        success: false,
+        message: "User already has an active membership",
+        booking: existingActive,
+      });
+    }
+
     const startDate = new Date();
     const endDate = new Date();
     endDate.setFullYear(endDate.getFullYear() + 1);
+
+    const qrTrackingToken = uuidv4();
+
+    const qrVerificationURL = `${APP_BASE_URL}/bookings/qr/verify/${qrTrackingToken}`;
+
+    const qrCodeUrl = await Qrcode.toDataURL(qrVerificationURL);
 
     const newbooking = await MembershipBooking.create({
       userId,
@@ -54,6 +76,13 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       razorpay_signature,
       paymentStatus: "Completed",
       status: "Active",
+
+      arrivalDate: null,
+      arrivalStatus: "NotRequested",
+      physicalCardRequested: false,
+      physicalCardIssued: false,
+      qrTrackingToken,
+      qrCodeUrl,
     });
 
     return res.status(200).json({
@@ -71,9 +100,6 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
 
 const getbookedMembershipDetail = async (req, res) => {
   try {
-
-    
-    
     const userId = req.user._id;
 
     const booking = await MembershipBooking.findOne({
