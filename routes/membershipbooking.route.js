@@ -14,6 +14,6 @@ membershipbookingRouter.post(
 );
 
 membershipbookingRouter.get("/booking/my", isAuth, getbookedMembershipDetail);
-membershipbookingRouter.get("/bookings/user/all", isAuth, getUserBookings);
+membershipbookingRouter.get("/userbookings/all", isAuth, getUserBookings);
 
 module.exports = { membershipbookingRouter };

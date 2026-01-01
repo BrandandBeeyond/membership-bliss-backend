@@ -63,11 +63,7 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
 
     const qrVerificationURL = `${APP_BASE_URL}/bookings/qr/verify/${qrTrackingToken}`;
 
-    
-
     const qrCodeUrl = await Qrcode.toDataURL(qrVerificationURL);
-
-    
 
     const newbooking = await MembershipBooking.create({
       userId,
@@ -86,7 +82,7 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       physicalCardRequested: false,
       physicalCardIssued: false,
       qrTrackingToken,
-      qrcodeURL:qrCodeUrl,
+      qrcodeURL: qrCodeUrl,
     });
 
     return res.status(200).json({
