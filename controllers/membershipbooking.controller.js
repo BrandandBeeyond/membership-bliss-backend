@@ -137,7 +137,7 @@ const getUserBookings = async (req, res) => {
     const userId = req.user._id;
 
     const bookings = await MembershipBooking.find({ userId })
-      .populate("membershipPlanId")
+      .populate("membershipPlanId", "categoryId")
       .sort({ createdAt: -1 });
 
     if (!bookings || bookings.length === 0) {
