@@ -132,4 +132,36 @@ const getbookedMembershipDetail = async (req, res) => {
   }
 };
 
-module.exports = { VerifyPaymentandCreateBooking, getbookedMembershipDetail };
+const getUserBookings = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const bookings = await MembershipBooking.find({ userId });
+
+    if (!bookings || bookings.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No bookings found",
+        bookings: [],
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      totalBookings: bookings.length,
+      bookings,
+    });
+  } catch (error) {
+    console.error("Error fetching user bookings:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user bookings",
+    });
+  }
+};
+
+module.exports = {
+  VerifyPaymentandCreateBooking,
+  getbookedMembershipDetail,
+  getUserBookings,
+};
