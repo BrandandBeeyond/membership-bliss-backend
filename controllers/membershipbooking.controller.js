@@ -168,8 +168,28 @@ const getUserBookings = async (req, res) => {
   }
 };
 
+const getAllBookings = async (req, res) => {
+  try {
+    const allbookings = await MembershipBooking.find();
+
+    return (
+      res.status(200),
+      json({
+        success: true,
+        bookings: allbookings,
+      })
+    );
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch all bookings",
+    });
+  }
+};
+
 module.exports = {
   VerifyPaymentandCreateBooking,
   getbookedMembershipDetail,
   getUserBookings,
+  getAllBookings,
 };
