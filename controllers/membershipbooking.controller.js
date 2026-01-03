@@ -187,9 +187,62 @@ const getAllBookings = async (req, res) => {
   }
 };
 
+const requestUserArrival = async (req, res) => {
+  try {
+    const { bookingId, arrivalDate } = req.body;
+
+    const userId = req.user._id;
+
+    if (!bookingId || !arrivalDate) {
+      return res.status(400).json({
+        success: false,
+        message: "booking Id and arrival date required",
+      });
+    }
+
+    const booking = await MembershipBooking.findOne({
+      _id: bookingId,
+      userId,
+      status: "Active",
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Membership booking not found",
+      });
+    }
+
+    if (booking.arrivalStatus === "Approved") {
+      return res.status(409).json({
+        success: false,
+        message: "User arrival date is already approved",
+      });
+    }
+
+    booking.arrivalDate = new Date(arrivalDate);
+    booking.arrivalStatus = "Pending";
+
+    await booking.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Arrival request submitted successfully",
+      booking,
+    });
+  } catch (error) {
+    console.error("Arrival request failed:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 module.exports = {
   VerifyPaymentandCreateBooking,
   getbookedMembershipDetail,
   getUserBookings,
   getAllBookings,
+  requestUserArrival,
 };
