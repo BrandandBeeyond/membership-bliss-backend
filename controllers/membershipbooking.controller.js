@@ -239,6 +239,8 @@ const requestUserArrival = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   VerifyPaymentandCreateBooking,
   getbookedMembershipDetail,
