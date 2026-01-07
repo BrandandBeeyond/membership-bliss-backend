@@ -1,7 +1,18 @@
-const { createVoucherRedeemtion } = require("../controllers/voucher.controller");
+const {
+  createVoucherRedeemtion,
+  verifyOtpRedeemption,
+  resendVerifyVoucherCode,
+  checkVoucherPendingRedemption,
+} = require("../controllers/voucher.controller");
 
 const voucherRouter = require("express").Router();
 
-voucherRouter.post('/create',createVoucherRedeemtion);
+voucherRouter.post("/voucher/redeem", createVoucherRedeemtion);
+voucherRouter.post("/voucher/redeem/verify", verifyOtpRedeemption);
+voucherRouter.post("/voucher/redeem/resend-code", resendVerifyVoucherCode);
+voucherRouter.post(
+  "/voucher/redeem/check-pending",
+  checkVoucherPendingRedemption
+);
 
-module.exports = {voucherRouter}
+module.exports = { voucherRouter };

@@ -91,4 +91,94 @@ const verifyOtpRedeemption = async (req, res) => {
   }
 };
 
-module.exports = { createVoucherRedeemtion, verifyOtpRedeemption };
+const resendVerifyVoucherCode = async (req, res) => {
+  try {
+    const { redemptionId } = req.body;
+
+    if (!redemptionId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "redemeption id is required" });
+    }
+
+    const redemption = await VoucherRedeemtion.findById(redemptionId);
+
+    if (!redemption) {
+      return res.status(404).json({ success: false, message: "Not found" });
+    }
+
+    if (redemption.status !== "Pending") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Redemption already processed" });
+    }
+
+    const newOtp = generateOTP();
+
+    redemption.otpCode = otpCode;
+    redemption.requestedAt = new Date();
+
+    await redemption.save();
+
+    return res.json({
+      success: true,
+      message: "OTP resent successfully",
+      data: {
+        redemptionId: redemption._id,
+        otpCode: newOtp,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Resend otp code error" });
+  }
+};
+
+const checkVoucherPendingRedemption = async (req, res) => {
+  try {
+    const { membershipBookingId, offerId } = req.query;
+
+    if (!membershipBookingId || !offerId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing Required Fields" });
+    }
+
+    const pending = await VoucherRedeemtion.findOne({
+      membershipBookingId,
+      offerId,
+      status: "Pending",
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!pending) {
+      return res.json({
+        success: true,
+        message: "No pending redemption",
+        data: null,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Pending redemption found",
+      data: {
+        redemptionId: pending._id,
+        otpCode: pending.otpCode,
+        quantityRequested: pending.quantityRequested,
+        status: pending.status,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {
+  createVoucherRedeemtion,
+  verifyOtpRedeemption,
+  resendVerifyVoucherCode,
+  checkVoucherPendingRedemption,
+};
