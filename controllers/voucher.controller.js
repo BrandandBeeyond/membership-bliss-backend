@@ -115,7 +115,10 @@ const resendVerifyVoucherCode = async (req, res) => {
 
     const newOtp = generateOTP();
 
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
     redemption.otpCode = otpCode;
+    redemption.expiresAt = expiresAt;
     redemption.requestedAt = new Date();
 
     await redemption.save();
@@ -126,6 +129,8 @@ const resendVerifyVoucherCode = async (req, res) => {
       data: {
         redemptionId: redemption._id,
         otpCode: newOtp,
+        expiresAt,
+        status: "Pending",
       },
     });
   } catch (error) {
