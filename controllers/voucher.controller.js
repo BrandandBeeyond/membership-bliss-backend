@@ -169,7 +169,7 @@ const checkVoucherPendingRedemption = async (req, res) => {
         quantityRequested: pending.quantityRequested,
         status: pending.status,
         expiresAt: new Date(
-          new Date(pending.createdAt).getTime() + 10 * 60 * 1000
+          new Date(pending.requestedAt).getTime() + 10 * 60 * 1000
         ),
       },
     });
