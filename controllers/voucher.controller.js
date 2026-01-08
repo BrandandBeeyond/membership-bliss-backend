@@ -117,7 +117,7 @@ const resendVerifyVoucherCode = async (req, res) => {
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    redemption.otpCode = otpCode;
+    redemption.otpCode = newOtp;
     redemption.expiresAt = expiresAt;
     redemption.requestedAt = new Date();
 
