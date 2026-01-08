@@ -168,6 +168,9 @@ const checkVoucherPendingRedemption = async (req, res) => {
         otpCode: pending.otpCode,
         quantityRequested: pending.quantityRequested,
         status: pending.status,
+        expiresAt: new Date(
+          new Date(pending.createdAt).getTime() + 10 * 60 * 1000
+        ),
       },
     });
   } catch (error) {
