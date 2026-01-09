@@ -170,12 +170,13 @@ const getUserBookings = async (req, res) => {
 
 const getAllBookings = async (req, res) => {
   try {
-    const allbookings = await MembershipBooking.find();
+    const allbookings = await MembershipBooking.find().populate({path: "userId", select: "name email"}).populate({path: "membershipPlanId", select: "name description price"}).sort({ createdAt: -1 });
 
     return (
-      res.status(200),
+      res.status(200).
       json({
         success: true,
+        total:allbookings.length,
         bookings: allbookings,
       })
     );
