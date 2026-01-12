@@ -1,4 +1,6 @@
-import Admin from "../models/Admin.model";
+const Admin = require("../models/Admin.model");
+
+const jwt = require("jsonwebtoken");
 
 const { JWT_EXPIRES_IN, JWT_SECRET } = require("../utils/config");
 

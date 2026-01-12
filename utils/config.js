@@ -18,6 +18,8 @@ const OTP_TEMPLATE = process.env.OTP_TEMPLATE;
 const OTP_PE_ID = process.env.OTP_PE_ID;
 const APP_BASE_URL = process.env.APP_BASE_URL;
 
+const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
+
 module.exports = {
   PORT,
   MONGO_URI,
@@ -37,4 +39,5 @@ module.exports = {
   OTP_TEMPLATE,
   OTP_PE_ID,
   APP_BASE_URL,
+  SUPER_ADMIN_PASSWORD,
 };
