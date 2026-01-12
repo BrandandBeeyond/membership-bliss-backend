@@ -113,4 +113,15 @@ const AdminLogin = async (req, res) => {
   }
 };
 
-module.exports = { CreateAdmin, AdminLogin };
+const AdminLogout = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Logout failed" });
+  }
+};
+
+module.exports = { CreateAdmin, AdminLogin, AdminLogout };

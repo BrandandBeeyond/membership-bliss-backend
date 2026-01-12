@@ -1,4 +1,8 @@
-const { AdminLogin, CreateAdmin } = require("../controllers/admin.controller");
+const {
+  AdminLogin,
+  CreateAdmin,
+  AdminLogout,
+} = require("../controllers/admin.controller");
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 
 const adminRouter = require("express").Router();
@@ -12,4 +16,5 @@ adminRouter.post(
   CreateAdmin
 );
 
+adminRouter.post("/admin-logout", ProtectedAdmin, AdminLogout);
 module.exports = { adminRouter };
