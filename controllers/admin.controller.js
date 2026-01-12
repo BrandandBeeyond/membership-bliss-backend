@@ -17,8 +17,7 @@ const generateToken = (admin) => {
     }
   );
 };
-
-export const CreateAdmin = async (req, res) => {
+const CreateAdmin = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -63,7 +62,7 @@ export const CreateAdmin = async (req, res) => {
   }
 };
 
-export const AdminLogin = async (req, res) => {
+const AdminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -113,3 +112,5 @@ export const AdminLogin = async (req, res) => {
     });
   }
 };
+
+module.exports = { CreateAdmin, AdminLogin };
