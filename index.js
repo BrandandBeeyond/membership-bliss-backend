@@ -22,6 +22,7 @@ const { membershipbookingRouter } = require("./routes/membershipbooking.route");
 const { paymentRouter } = require("./routes/payment.route");
 const { updatesRouter } = require("./routes/updates.route");
 const { voucherRouter } = require("./routes/voucher.route");
+const { adminRouter } = require("./routes/admin.route");
 
 const app = express();
 const port = PORT;
@@ -51,6 +52,9 @@ app.use("/api/v1/bookings", membershipbookingRouter);
 app.use("/api/v1/offers", offerRouter);
 app.use("/api/v1/updates", updatesRouter);
 app.use("/api/v1/vouchers", voucherRouter);
+
+// admin routes
+app.use("/api/v1/admin", adminRouter);
 
 app.listen(port, () => {
   console.log(`server is running on http://localhost:${port}`);
