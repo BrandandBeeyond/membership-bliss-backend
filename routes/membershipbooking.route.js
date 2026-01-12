@@ -4,7 +4,9 @@ const {
   getUserBookings,
   getAllBookings,
   requestUserArrival,
+  updateArrivalStatus,
 } = require("../controllers/membershipbooking.controller");
+const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 const { isAuth } = require("../middlewares/middleware");
 
 const membershipbookingRouter = require("express").Router();
@@ -21,5 +23,11 @@ membershipbookingRouter.post("/request-arrival", isAuth, requestUserArrival);
 
 // for admin panel
 membershipbookingRouter.get("/allbookings", getAllBookings);
+membershipbookingRouter.put(
+  "/membership/:id/arrival",
+  ProtectedAdmin,
+  AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
+  updateArrivalStatus
+);
 
 module.exports = { membershipbookingRouter };

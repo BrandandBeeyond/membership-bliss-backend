@@ -170,16 +170,16 @@ const getUserBookings = async (req, res) => {
 
 const getAllBookings = async (req, res) => {
   try {
-    const allbookings = await MembershipBooking.find().populate({path: "userId", select: "name email"}).populate({path: "membershipPlanId", select: "name description price"}).sort({ createdAt: -1 });
+    const allbookings = await MembershipBooking.find()
+      .populate({ path: "userId", select: "name email" })
+      .populate({ path: "membershipPlanId", select: "name description price" })
+      .sort({ createdAt: -1 });
 
-    return (
-      res.status(200).
-      json({
-        success: true,
-        total:allbookings.length,
-        bookings: allbookings,
-      })
-    );
+    return res.status(200).json({
+      success: true,
+      total: allbookings.length,
+      bookings: allbookings,
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -240,7 +240,55 @@ const requestUserArrival = async (req, res) => {
   }
 };
 
+const updateArrivalStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { arrivalStatus, arrivalDate } = req.body;
 
+    if (!["Approved", "Rejected"].includes(arrivalStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid arrival status",
+      });
+    }
+
+    const booking = await MembershipBooking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Membership booking not found",
+      });
+    }
+
+    if (booking.arrivalStatus !== "Pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Arrival request already processed",
+      });
+    }
+
+    booking.arrivalStatus = arrivalStatus;
+
+    if (arrivalStatus === "Approved") {
+      booking.arrivalDate = arrivalDate || new Date();
+    }
+
+    await booking.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Arrival ${arrivalStatus.toLowerCase()} Successfully`,
+      booking,
+    });
+  } catch (error) {
+    console.error("Arrival Approval Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
 
 module.exports = {
   VerifyPaymentandCreateBooking,
@@ -248,4 +296,5 @@ module.exports = {
   getUserBookings,
   getAllBookings,
   requestUserArrival,
+  updateArrivalStatus,
 };
