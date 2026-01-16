@@ -290,6 +290,9 @@ const updateArrivalStatus = async (req, res) => {
   }
 };
 
+
+
+
 module.exports = {
   VerifyPaymentandCreateBooking,
   getbookedMembershipDetail,

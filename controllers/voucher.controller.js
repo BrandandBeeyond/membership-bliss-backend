@@ -184,9 +184,24 @@ const checkVoucherPendingRedemption = async (req, res) => {
   }
 };
 
+const getAllRedeemVoucherRequests = async (req, res) => {
+  try {
+    const allredeemVouchers = await VoucherRedeemtion.find();
+
+    return res.status(200).json({
+      success: true,
+      reedemedVouchers: allredeemVouchers,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   createVoucherRedeemtion,
   verifyOtpRedeemption,
   resendVerifyVoucherCode,
   checkVoucherPendingRedemption,
+  getAllRedeemVoucherRequests,
 };
