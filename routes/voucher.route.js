@@ -24,4 +24,11 @@ voucherRouter.get(
   getAllRedeemVoucherRequests
 );
 
+voucherRouter.post(
+  "/voucher/redeem/approve-with-code",
+  ProtectedAdmin,
+  AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
+  approveVoucherRedeemptionWithCode
+);
+
 module.exports = { voucherRouter };

@@ -198,10 +198,71 @@ const getAllRedeemVoucherRequests = async (req, res) => {
   }
 };
 
+const approveVoucherRedeemptionWithCode = async (req, res) => {
+  try {
+    const { redemptionId, adminId, otpCode } = req.body;
+
+    if (!redemptionId || !adminId || !otpCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const redemption = await VoucherRedeemtion.findById(redemptionId);
+
+    if (!redemption) {
+      return res.status(404).json({
+        success: false,
+        message: "Redemption not found",
+      });
+    }
+
+    if (redemption.status !== "Pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Redemption already processed",
+      });
+    }
+
+    if (redemption.otpCode !== otpCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    redemption.status = "Approved";
+    redemption.quantityApproved = redemption.quantityRequested;
+    redemption.approvedAt = new Date();
+    redemption.approvedBy = adminId;
+
+    await redemption.save();
+
+    await MembershipBooking.findOneAndUpdate(redemption.membershipBookingId, {
+      $push: {
+        usedOffers: {
+          offerId: redemption.offerId,
+        },
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Redemption verified successfully",
+      data: redemption,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Redemption verify error" });
+  }
+};
+
 module.exports = {
   createVoucherRedeemtion,
   verifyOtpRedeemption,
   resendVerifyVoucherCode,
   checkVoucherPendingRedemption,
   getAllRedeemVoucherRequests,
+  approveVoucherRedeemptionWithCode
 };
