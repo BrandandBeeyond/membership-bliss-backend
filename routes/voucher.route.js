@@ -4,6 +4,7 @@ const {
   resendVerifyVoucherCode,
   checkVoucherPendingRedemption,
   getAllRedeemVoucherRequests,
+  approveVoucherRedeemptionWithCode,
 } = require("../controllers/voucher.controller");
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 
