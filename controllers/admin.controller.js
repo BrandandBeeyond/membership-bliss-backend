@@ -124,4 +124,30 @@ const AdminLogout = async (req, res) => {
   }
 };
 
-module.exports = { CreateAdmin, AdminLogin, AdminLogout };
+const getAdminDetails = async (req, res) => {
+  try {
+    const adminId = req.admin.id;
+    const admin = await Admin.findById(adminId);
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+module.exports = { CreateAdmin, AdminLogin, AdminLogout, getAdminDetails};

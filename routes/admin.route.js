@@ -2,6 +2,7 @@ const {
   AdminLogin,
   CreateAdmin,
   AdminLogout,
+  getAdminDetails,
 } = require("../controllers/admin.controller");
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 
@@ -15,6 +16,8 @@ adminRouter.post(
   AuthorizeRoles("SUPER_ADMIN"),
   CreateAdmin
 );
+
+adminRouter.get("/get-admin-details", ProtectedAdmin, getAdminDetails);
 
 adminRouter.post("/admin-logout", ProtectedAdmin, AdminLogout);
 module.exports = { adminRouter };
