@@ -50,7 +50,7 @@ const createVoucherRedeemtion = async (req, res) => {
 
 const verifyOtpRedeemption = async (req, res) => {
   try {
-    const { redemptionId, otpCode, adminId } = req.body;
+    const { redemptionId, otpCode, adminId, quantityApproved } = req.body;
 
     const redemption = await VoucherRedeemtion.findById(redemptionId);
 
@@ -66,20 +66,35 @@ const verifyOtpRedeemption = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
+    if (
+      quantityApproved < 1 ||
+      quantityApproved > redemption.quantityRequested
+    ) {
+      return res.status(400).json({
+        message: `Approved quantity must be between 1 and ${redemption.quantityRequested}`,
+      });
+    }
+
     redemption.status = "Approved";
-    redemption.quantityApproved = redemption.quantityRequested;
+    redemption.quantityApproved = quantityApproved;
     redemption.approvedAt = new Date();
     redemption.approvedBy = adminId;
 
     await redemption.save();
 
-    await MembershipBooking.findOneAndUpdate(redemption.membershipBookingId, {
-      $push: {
-        usedOffers: {
-          offerId: redemption.offerId,
+    await MembershipBooking.findOneAndUpdate(
+      redemption.membershipBookingId,
+      ({ _id: redemption.membershipBookingId },
+      {
+        $push: {
+          usedOffers: {
+            offerId: redemption.offerId,
+            quantityUsed: quantityApproved,
+            usedAt: new Date(),
+          },
         },
-      },
-    });
+      }),
+    );
 
     return res.json({
       success: true,
