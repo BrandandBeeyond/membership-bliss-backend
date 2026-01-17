@@ -52,6 +52,8 @@ const verifyOtpRedeemption = async (req, res) => {
   try {
     const { redemptionId, otpCode, adminId, quantityApproved } = req.body;
 
+    console.log("debug", req.body);
+
     const redemption = await VoucherRedeemtion.findById(redemptionId);
 
     if (!redemption) {
