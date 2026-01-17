@@ -189,15 +189,21 @@ const getAllRedeemVoucherRequests = async (req, res) => {
     const allredeemVouchers = await VoucherRedeemtion.find()
       .populate({
         path: "membershipBookingId",
-        select: "userId membershipNumber memberDetails",
-        populate: {
-          path: "userId",
-          select: "name email",
-        },
+        select: "userId membershipNumber membershipPlanId memberDetails",
+        populate: [
+          {
+            path: "userId",
+            select: "name email",
+          },
+          {
+            path: "membershipPlanId",
+            select: "name",
+          },
+        ],
       })
       .populate({
         path: "offerId",
-        select: "title items",
+        select: "title items.name",
       });
 
     return res.status(200).json({
