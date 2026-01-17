@@ -1,4 +1,5 @@
 const MembershipBooking = require("../models/MembershipBooking.model");
+const OfferCategory = require("../models/Offercategory.model");
 const VoucherRedeemtion = require("../models/VoucherRedeemtion.model");
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
@@ -186,29 +187,49 @@ const checkVoucherPendingRedemption = async (req, res) => {
 
 const getAllRedeemVoucherRequests = async (req, res) => {
   try {
-    const allredeemVouchers = await VoucherRedeemtion.find()
-      .populate({
-        path: "membershipBookingId",
-        select: "userId membershipNumber membershipPlanId memberDetails",
-        populate: [
-          {
-            path: "userId",
-            select: "name email",
-          },
-          {
-            path: "membershipPlanId",
-            select: "name",
-          },
-        ],
-      })
-      .populate({
-        path: "offerId",
-        select: "title items.name",
-      });
+    let allredeemVouchers = await VoucherRedeemtion.find().populate({
+      path: "membershipBookingId",
+      select: "userId membershipNumber membershipPlanId memberDetails",
+      populate: [
+        {
+          path: "userId",
+          select: "name email",
+        },
+        {
+          path: "membershipPlanId",
+          select: "name",
+        },
+      ],
+    });
+
+    const updatedVouchers = await Promise.all(
+      allredeemVouchers.map(async (voucher) => {
+        const offer = await OfferCategory.findOne({
+          "items._id": voucher.offerId,
+        });
+
+        let itemName = null;
+        let offerTitle = null;
+
+        if (offer) {
+          offerTitle = offer.title;
+          const item = offer.items.find(
+            (it) => it._id.toString() === voucher.offerId.toString(),
+          );
+          itemName = item?.name || null;
+        }
+
+        return {
+          ...voucher.toObject(),
+          offerTitle,
+          itemName,
+        };
+      }),
+    );
 
     return res.status(200).json({
       success: true,
-      reedemedVouchers: allredeemVouchers,
+      reedemedVouchers: updatedVouchers,
     });
   } catch (error) {
     console.error(error);
