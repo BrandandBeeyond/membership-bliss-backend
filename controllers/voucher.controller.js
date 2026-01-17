@@ -174,7 +174,7 @@ const checkVoucherPendingRedemption = async (req, res) => {
         quantityRequested: pending.quantityRequested,
         status: pending.status,
         expiresAt: new Date(
-          new Date(pending.requestedAt).getTime() + 10 * 60 * 1000
+          new Date(pending.requestedAt).getTime() + 10 * 60 * 1000,
         ),
       },
     });
@@ -186,7 +186,19 @@ const checkVoucherPendingRedemption = async (req, res) => {
 
 const getAllRedeemVoucherRequests = async (req, res) => {
   try {
-    const allredeemVouchers = await VoucherRedeemtion.find();
+    const allredeemVouchers = await VoucherRedeemtion.find()
+      .populate({
+        path: "membershipBookingId",
+        select: "userId membershipNumber",
+        populate: {
+          path: "userId",
+          select: "name email",
+        },
+      })
+      .populate({
+        path: "offerId",
+        select: "title items",
+      });
 
     return res.status(200).json({
       success: true,
@@ -264,5 +276,5 @@ module.exports = {
   resendVerifyVoucherCode,
   checkVoucherPendingRedemption,
   getAllRedeemVoucherRequests,
-  approveVoucherRedeemptionWithCode
+  approveVoucherRedeemptionWithCode,
 };
