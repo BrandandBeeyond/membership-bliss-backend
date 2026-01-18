@@ -259,6 +259,8 @@ const getAllRedeemVoucherRequests = async (req, res) => {
 
 const approveVoucherRedeemptionWithCode = async (req, res) => {
   try {
+    console.log("sending body", req.body);
+
     const { redemptionId, adminId, otpCode, quantityApproved } = req.body;
 
     if (!redemptionId || !adminId || !otpCode || !quantityApproved) {
