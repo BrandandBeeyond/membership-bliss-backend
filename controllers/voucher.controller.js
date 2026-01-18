@@ -50,10 +50,16 @@ const createVoucherRedeemtion = async (req, res) => {
 
 const verifyOtpRedeemption = async (req, res) => {
   try {
+
+        console.log("debugging the entries", req.body);
+
     const { redemptionId, otpCode, adminId, quantityApproved } = req.body;
 
-    console.log("debugging the entries", req.body);
-
+    if (!redemptionId || !otpCode || !adminId || !quantityApproved) {
+      return res
+        .status(400)
+        .json({ message: "Missing required fields" });
+    }
     const redemption = await VoucherRedeemtion.findById(redemptionId);
 
     if (!redemption) {
