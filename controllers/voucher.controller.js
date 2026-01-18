@@ -313,6 +313,11 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
       },
     );
 
+    await OfferCategory.findOneAndUpdate(
+      { "items._id": redemption.offerId },
+      { $inc: { "items.$.usedCount": quantityApproved } }
+    );
+
     return res.json({
       success: true,
       message: "Redemption verified successfully",
