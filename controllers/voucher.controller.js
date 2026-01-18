@@ -50,15 +50,12 @@ const createVoucherRedeemtion = async (req, res) => {
 
 const verifyOtpRedeemption = async (req, res) => {
   try {
-
-        console.log("debugging the entries", req.body);
+    console.log("sending body", req.body);
 
     const { redemptionId, otpCode, adminId, quantityApproved } = req.body;
 
     if (!redemptionId || !otpCode || !adminId || !quantityApproved) {
-      return res
-        .status(400)
-        .json({ message: "Missing required fields" });
+      return res.status(400).json({ message: "Missing required fields" });
     }
     const redemption = await VoucherRedeemtion.findById(redemptionId);
 
@@ -262,9 +259,9 @@ const getAllRedeemVoucherRequests = async (req, res) => {
 
 const approveVoucherRedeemptionWithCode = async (req, res) => {
   try {
-    const { redemptionId, adminId, otpCode } = req.body;
+    const { redemptionId, adminId, otpCode, quantityApproved } = req.body;
 
-    if (!redemptionId || !adminId || !otpCode) {
+    if (!redemptionId || !adminId || !otpCode || !quantityApproved) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
@@ -295,19 +292,24 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
     }
 
     redemption.status = "Approved";
-    redemption.quantityApproved = redemption.quantityRequested;
+    redemption.quantityApproved = quantityApproved;
     redemption.approvedAt = new Date();
     redemption.approvedBy = adminId;
 
     await redemption.save();
 
-    await MembershipBooking.findOneAndUpdate(redemption.membershipBookingId, {
-      $push: {
-        usedOffers: {
-          offerId: redemption.offerId,
+    await MembershipBooking.findOneAndUpdate(
+      { _id: redemption.membershipBookingId },
+      {
+        $push: {
+          usedOffers: {
+            offerId: redemption.offerId,
+            quantityUsed: quantityApproved,
+            usedAt: new Date(),
+          },
         },
       },
-    });
+    );
 
     return res.json({
       success: true,
