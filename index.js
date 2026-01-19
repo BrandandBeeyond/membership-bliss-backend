@@ -23,6 +23,8 @@ const { paymentRouter } = require("./routes/payment.route");
 const { updatesRouter } = require("./routes/updates.route");
 const { voucherRouter } = require("./routes/voucher.route");
 const { adminRouter } = require("./routes/admin.route");
+const { NotificationRouter } = require("./routes/notification.route");
+const { experienceStoryRouter } = require("./routes/experiencestory.route");
 
 const app = express();
 const port = PORT;
@@ -52,6 +54,8 @@ app.use("/api/v1/bookings", membershipbookingRouter);
 app.use("/api/v1/offers", offerRouter);
 app.use("/api/v1/updates", updatesRouter);
 app.use("/api/v1/vouchers", voucherRouter);
+app.use("/api/v1/notifications", NotificationRouter);
+app.use("/api/v1/experiencestory", experienceStoryRouter);
 
 // admin routes
 app.use("/api/v1/admin", adminRouter);
