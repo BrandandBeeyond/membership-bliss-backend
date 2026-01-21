@@ -2,6 +2,7 @@ const upload = require("../config/multerConfig");
 const {
   createExperienceStory,
   updateExperienceStory,
+  getAllExperienceStories,
 } = require("../controllers/ExperienceStory.controller");
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 
@@ -24,5 +25,7 @@ experienceStoryRouter.put(
   AuthorizeRoles("ADMIN", "SUPER_ADMIN"),
   updateExperienceStory,
 );
+
+experienceStoryRouter.get("/getall", getAllExperienceStories);
 
 module.exports = { experienceStoryRouter };

@@ -155,4 +155,33 @@ const updateExperienceStory = async (req, res) => {
   }
 };
 
-module.exports = { createExperienceStory, updateExperienceStory };
+const getAllExperienceStories = async (req, res) => {
+  try {
+    const allexperiences = await ExperienceStory.find();
+
+    if (allexperiences.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "no experiences found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: allexperiences,
+    });
+  } catch (error) {
+    console.error("fetch experiences failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = {
+  createExperienceStory,
+  updateExperienceStory,
+  getAllExperienceStories,
+};
