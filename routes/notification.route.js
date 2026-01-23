@@ -16,7 +16,7 @@ NotificationRouter.post(
 );
 
 NotificationRouter.get("/internal/all", isAuth, getAllNotifications);
-NotificationRouter.put("/:id/read", isAuth, markNotificationRead);
+NotificationRouter.put("/internal/:id/read", isAuth, markNotificationRead);
 NotificationRouter.delete("/clearall", isAuth, clearAllNotifications);
 
 module.exports = { NotificationRouter };
