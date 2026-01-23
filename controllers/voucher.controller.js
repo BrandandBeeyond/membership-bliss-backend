@@ -49,84 +49,7 @@ const createVoucherRedeemtion = async (req, res) => {
   }
 };
 
-const verifyOtpRedeemption = async (req, res) => {
-  try {
-    console.log("sending body", req.body);
 
-    const { redemptionId, otpCode, adminId, quantityApproved } = req.body;
-
-    if (!redemptionId || !otpCode || !adminId || !quantityApproved) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-    const redemption = await VoucherRedeemtion.findById(redemptionId);
-
-    if (!redemption) {
-      return res.status(404).json({ message: "Redemption not found" });
-    }
-
-    if (redemption.status !== "Pending") {
-      return res.status(400).json({ message: "Redemption already processed" });
-    }
-
-    if (redemption.otpCode !== otpCode) {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
-
-    if (
-      quantityApproved < 1 ||
-      quantityApproved > redemption.quantityRequested
-    ) {
-      return res.status(400).json({
-        message: `Approved quantity must be between 1 and ${redemption.quantityRequested}`,
-      });
-    }
-
-    const booking = await MembershipBooking.findById(
-      redemption.membershipBookingId,
-    );
-
-    if (!booking || !booking.userId) {
-      return res.status(404).json({ message: "Membership Booking not found" });
-    }
-
-    redemption.status = "Approved";
-    redemption.quantityApproved = quantityApproved;
-    redemption.approvedAt = new Date();
-    redemption.approvedBy = adminId;
-
-    await redemption.save();
-
-    await createNotification({
-      userId: booking.userId,
-      title: "Voucher Redeemed",
-      message: `Your voucher request has been approved for ${quantityApproved} item(s).`,
-      type: "voucher",
-    });
-
-    await MembershipBooking.findOneAndUpdate(
-      redemption.membershipBookingId,
-      ({ _id: redemption.membershipBookingId },
-      {
-        $push: {
-          usedOffers: {
-            offerId: redemption.offerId,
-            quantityUsed: quantityApproved,
-            usedAt: new Date(),
-          },
-        },
-      }),
-    );
-
-    return res.json({
-      success: true,
-      message: "Redemption verified successfully",
-      data: redemption,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Redemption verify error" });
-  }
-};
 
 const resendVerifyVoucherCode = async (req, res) => {
   try {
@@ -309,12 +232,28 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
       });
     }
 
+     const booking = await MembershipBooking.findById(
+      redemption.membershipBookingId,
+    );
+
+    if (!booking || !booking.userId) {
+      return res.status(404).json({ message: "Membership Booking not found" });
+    }
+
     redemption.status = "Approved";
     redemption.quantityApproved = quantityApproved;
     redemption.approvedAt = new Date();
     redemption.approvedBy = adminId;
 
     await redemption.save();
+
+      await createNotification({
+      userId: booking.userId,
+      title: "Voucher Redeemed",
+      message: `Your voucher request has been approved for ${quantityApproved} item(s).`,
+      type: "voucher",
+    });
+
 
     await MembershipBooking.findOneAndUpdate(
       { _id: redemption.membershipBookingId },

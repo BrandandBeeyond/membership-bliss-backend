@@ -1,6 +1,5 @@
 const {
   createVoucherRedeemtion,
-  verifyOtpRedeemption,
   resendVerifyVoucherCode,
   checkVoucherPendingRedemption,
   getAllRedeemVoucherRequests,
