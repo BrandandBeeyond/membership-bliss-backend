@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const { v4: uuidv4 } = require("uuid");
 const { APP_BASE_URL } = require("../utils/config");
 const Qrcode = require("qrcode");
+const { createNotification } = require("../config/createNotification");
 
 const VerifyPaymentandCreateBooking = async (req, res) => {
   try {
@@ -83,6 +84,13 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       physicalCardIssued: false,
       qrTrackingToken,
       qrcodeURL: qrCodeUrl,
+    });
+
+    await createNotification({
+      userId: userId,
+      title: "Membership Activated",
+      message: `Your membership is active till ${endDate.toDateString()}`,
+      type: "membership",
     });
 
     return res.status(200).json({
@@ -289,9 +297,6 @@ const updateArrivalStatus = async (req, res) => {
     });
   }
 };
-
-
-
 
 module.exports = {
   VerifyPaymentandCreateBooking,

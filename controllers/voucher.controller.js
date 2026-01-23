@@ -1,3 +1,4 @@
+const { createNotification } = require("../config/createNotification");
 const MembershipBooking = require("../models/MembershipBooking.model");
 const OfferCategory = require("../models/Offercategory.model");
 const VoucherRedeemtion = require("../models/VoucherRedeemtion.model");
@@ -59,6 +60,14 @@ const verifyOtpRedeemption = async (req, res) => {
     }
     const redemption = await VoucherRedeemtion.findById(redemptionId);
 
+    const booking = await MembershipBooking.findById(
+      redemption.membershipBookingId,
+    );
+
+    if (!booking) {
+      return res.status(404).json({ message: "Membership Booking not found" });
+    }
+
     if (!redemption) {
       return res.status(404).json({ message: "Redemption not found" });
     }
@@ -86,6 +95,13 @@ const verifyOtpRedeemption = async (req, res) => {
     redemption.approvedBy = adminId;
 
     await redemption.save();
+
+    await createNotification({
+      userId: booking.userId,
+      title: "Voucher Redeemed",
+      message: `Your voucher request has been approved for ${quantityApproved} item(s).`,
+      type: "voucher",
+    });
 
     await MembershipBooking.findOneAndUpdate(
       redemption.membershipBookingId,
@@ -315,7 +331,7 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
 
     await OfferCategory.findOneAndUpdate(
       { "items._id": redemption.offerId },
-      { $inc: { "items.$.usedCount": quantityApproved } }
+      { $inc: { "items.$.usedCount": quantityApproved } },
     );
 
     return res.json({
