@@ -286,7 +286,6 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
 
 module.exports = {
   createVoucherRedeemtion,
-  verifyOtpRedeemption,
   resendVerifyVoucherCode,
   checkVoucherPendingRedemption,
   getAllRedeemVoucherRequests,
