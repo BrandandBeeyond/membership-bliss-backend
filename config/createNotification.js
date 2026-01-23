@@ -1,4 +1,4 @@
-import InternalNotification from "../models/InternalNotification.model";
+const InternalNotification = require("../models/InternalNotification.model");
 
 export const createNotification = async ({
   userId,
