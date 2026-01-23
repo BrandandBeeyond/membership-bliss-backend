@@ -60,14 +60,6 @@ const verifyOtpRedeemption = async (req, res) => {
     }
     const redemption = await VoucherRedeemtion.findById(redemptionId);
 
-    const booking = await MembershipBooking.findById(
-      redemption.membershipBookingId,
-    );
-
-    if (!booking) {
-      return res.status(404).json({ message: "Membership Booking not found" });
-    }
-
     if (!redemption) {
       return res.status(404).json({ message: "Redemption not found" });
     }
@@ -87,6 +79,14 @@ const verifyOtpRedeemption = async (req, res) => {
       return res.status(400).json({
         message: `Approved quantity must be between 1 and ${redemption.quantityRequested}`,
       });
+    }
+
+    const booking = await MembershipBooking.findById(
+      redemption.membershipBookingId,
+    );
+
+    if (!booking || !booking.userId) {
+      return res.status(404).json({ message: "Membership Booking not found" });
     }
 
     redemption.status = "Approved";

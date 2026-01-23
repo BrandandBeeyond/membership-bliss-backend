@@ -13,6 +13,8 @@ const createNotification = async ({
       message,
       type,
     });
+
+    console.log("internal notification created successfully");
   } catch (error) {
     console.error("Notification Error:", error.message);
   }
