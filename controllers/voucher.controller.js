@@ -1,4 +1,4 @@
-const { createNotification } = require("../config/createNotification");
+const createNotification = require("../config/createNotification");
 const MembershipBooking = require("../models/MembershipBooking.model");
 const OfferCategory = require("../models/Offercategory.model");
 const VoucherRedeemtion = require("../models/VoucherRedeemtion.model");

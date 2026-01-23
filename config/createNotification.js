@@ -1,6 +1,6 @@
 const InternalNotification = require("../models/InternalNotification.model");
 
-export const createNotification = async ({
+const createNotification = async ({
   userId,
   title,
   message,
@@ -17,3 +17,5 @@ export const createNotification = async ({
     console.error("Notification Error:", error.message);
   }
 };
+
+module.exports = createNotification;

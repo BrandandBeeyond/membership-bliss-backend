@@ -3,7 +3,8 @@ const crypto = require("crypto");
 const { v4: uuidv4 } = require("uuid");
 const { APP_BASE_URL } = require("../utils/config");
 const Qrcode = require("qrcode");
-const { createNotification } = require("../config/createNotification");
+const createNotification = require("../config/createNotification");
+
 
 const VerifyPaymentandCreateBooking = async (req, res) => {
   try {
