@@ -5,7 +5,6 @@ const { APP_BASE_URL } = require("../utils/config");
 const Qrcode = require("qrcode");
 const createNotification = require("../config/createNotification");
 
-
 const VerifyPaymentandCreateBooking = async (req, res) => {
   try {
     const {
@@ -91,7 +90,7 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       userId: userId,
       title: "Membership Activated",
       message: `Your membership is active till ${endDate.toDateString()}`,
-      type: "membership",
+      type: "booking",
     });
 
     return res.status(200).json({

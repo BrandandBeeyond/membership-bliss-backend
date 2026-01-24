@@ -49,8 +49,6 @@ const createVoucherRedeemtion = async (req, res) => {
   }
 };
 
-
-
 const resendVerifyVoucherCode = async (req, res) => {
   try {
     const { redemptionId } = req.body;
@@ -232,7 +230,7 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
       });
     }
 
-     const booking = await MembershipBooking.findById(
+    const booking = await MembershipBooking.findById(
       redemption.membershipBookingId,
     );
 
@@ -247,13 +245,12 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
 
     await redemption.save();
 
-      await createNotification({
+    await createNotification({
       userId: booking.userId,
       title: "Voucher Redeemed",
       message: `Your voucher request has been approved for ${quantityApproved} item(s).`,
-      type: "voucher",
+      type: "general",
     });
-
 
     await MembershipBooking.findOneAndUpdate(
       { _id: redemption.membershipBookingId },
