@@ -10,15 +10,11 @@ const offerItemSchema = new mongoose.Schema({
     required: false,
     default: "",
   },
-  worth:{
+  worth: {
     type: Number,
     required: true,
   },
   inventory: {
-    type: Number,
-    default: 0,
-  },
-  usedCount: {
     type: Number,
     default: 0,
   },
@@ -52,10 +48,6 @@ const offerCategorySchema = new mongoose.Schema({
     type: Number,
     default: null,
     required: false,
-  },
-  usedCount: {
-    type: Number,
-    default: 0,
   },
 });
 

@@ -3,7 +3,7 @@ const Cloudinary = require("cloudinary");
 
 const createOfferCategory = async (req, res) => {
   try {
-    const { title, type, items,description } = req.body;
+    const { title, type, items, description } = req.body;
 
     if (!title) {
       return res.status(400).json({
@@ -30,7 +30,7 @@ const createOfferCategory = async (req, res) => {
       req.files.thumbnail[0].path,
       {
         folder: "offers/category",
-      }
+      },
     );
 
     let itemsArray = [];
@@ -43,7 +43,6 @@ const createOfferCategory = async (req, res) => {
         description: item.description || "",
         worth: item.worth,
         inventory: item.inventory || 0,
-        usedCount: item.usedCount || 0,
       }));
     }
 

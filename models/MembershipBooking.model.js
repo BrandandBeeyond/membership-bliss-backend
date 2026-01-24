@@ -4,6 +4,17 @@ const { v4: uuidv4 } = require("uuid");
 const usedOffersSchema = new mongoose.Schema({
   offerId: {
     type: mongoose.Schema.Types.ObjectId,
+    ref: "OfferCategory",
+  },
+  redemptionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "VoucherRedeemtion",
+    required: true,
+  },
+  quantityUsed: {
+    type: Number,
+    required: true,
+    min: 1,
   },
   usedOn: {
     type: Date,
@@ -114,7 +125,7 @@ const membershipBookingSchema = new mongoose.Schema({
 
 const MembershipBooking = mongoose.model(
   "MembershipBooking",
-  membershipBookingSchema
+  membershipBookingSchema,
 );
 
 module.exports = MembershipBooking;
