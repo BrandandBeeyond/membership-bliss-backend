@@ -298,6 +298,37 @@ const updateArrivalStatus = async (req, res) => {
   }
 };
 
+const getActiveMembership = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const activeMembership = await MembershipBooking.findOne({
+      userId,
+      status: "Active",
+    })
+      .populate(usedOffers.offerId)
+      .lean();
+
+    if (!activeMembership) {
+      return res.status(404).json({
+        success: false,
+        message: "No active membership found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      activeMembership,
+    });
+  } catch (error) {
+    console.error("getActiveMembership error", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 module.exports = {
   VerifyPaymentandCreateBooking,
   getbookedMembershipDetail,
@@ -305,4 +336,5 @@ module.exports = {
   getAllBookings,
   requestUserArrival,
   updateArrivalStatus,
+  getActiveMembership,
 };
