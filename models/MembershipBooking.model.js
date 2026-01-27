@@ -2,9 +2,13 @@ const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
 const usedOffersSchema = new mongoose.Schema({
-  offerId: {
+  categoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "OfferCategory",
+  },
+  itemId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
   },
   redemptionId: {
     type: mongoose.Schema.Types.ObjectId,

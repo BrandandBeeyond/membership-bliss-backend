@@ -6,7 +6,12 @@ const voucherRedeemtionSchema = new mongoose.Schema({
     ref: "MembershipBooking",
     required: true,
   },
-  offerId: {
+  categoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "OfferCategory",
+    required: true,
+  },
+  itemId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
@@ -40,7 +45,7 @@ const voucherRedeemtionSchema = new mongoose.Schema({
 
 const VoucherRedeemtion = mongoose.model(
   "VoucherRedeemtion",
-  voucherRedeemtionSchema
+  voucherRedeemtionSchema,
 );
 
 module.exports = VoucherRedeemtion;

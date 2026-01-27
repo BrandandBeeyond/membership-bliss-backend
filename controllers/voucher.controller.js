@@ -257,7 +257,8 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
       {
         $push: {
           usedOffers: {
-            offerId: redemption.offerId,
+            categoryId: redemption.categoryId,
+            itemId: redemption.itemId,
             quantityUsed: quantityApproved,
             usedAt: new Date(),
           },
@@ -266,8 +267,15 @@ const approveVoucherRedeemptionWithCode = async (req, res) => {
     );
 
     await OfferCategory.findOneAndUpdate(
-      { "items._id": redemption.offerId },
-      { $inc: { "items.$.usedCount": quantityApproved } },
+      {
+        _id: redemption.categoryId,
+        "items._id": redemption.itemId,
+      },
+      {
+        $inc: {
+          "items.$.usedCount": quantityApproved,
+        },
+      },
     );
 
     return res.json({

@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const { APP_BASE_URL } = require("../utils/config");
 const Qrcode = require("qrcode");
 const createNotification = require("../config/createNotification");
+const OfferCategory = require("../models/Offercategory.model");
 
 const VerifyPaymentandCreateBooking = async (req, res) => {
   try {
@@ -302,25 +303,44 @@ const getActiveMembership = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const activeMembership = await MembershipBooking.findOne({
+    const booking = await MembershipBooking.findOne({
       userId,
       status: "Active",
-    })
-      .populate({
-        path: "usedOffers.offerId",
-      })
-      .lean();
+    }).lean();
 
-    if (!activeMembership) {
+    if (!booking) {
       return res.status(404).json({
         success: false,
         message: "No active membership found",
       });
     }
 
+    const usedOffersWithDetails = await Promise.all(
+      booking.usedOffers.map(async (used) => {
+        const category = await OfferCategory.findOne(
+          { _id: used.categoryId, "items._id": used.itemId },
+          { title: 1, type: 1, "items.$": 1 },
+        ).lean();
+
+        if (!category) return null;
+
+        return {
+          categoryId: used.categoryId,
+          itemId: used.itemId,
+          categoryTitle: category.title,
+          categoryType: category.type,
+          item: category.items[0],
+          quantityUsed: used.quantityUsed,
+          usedOn: used.usedOn,
+        };
+      }),
+    );
+
+    booking.usedOffers = usedOffersWithDetails.filter(Boolean);
+
     return res.status(200).json({
       success: true,
-      activeMembership,
+      activeMembership: booking,
     });
   } catch (error) {
     console.error("getActiveMembership error", error);
@@ -330,7 +350,6 @@ const getActiveMembership = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   VerifyPaymentandCreateBooking,
