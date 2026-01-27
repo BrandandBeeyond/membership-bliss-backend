@@ -306,7 +306,9 @@ const getActiveMembership = async (req, res) => {
       userId,
       status: "Active",
     })
-      .populate(usedOffers.offerId)
+      .populate({
+        path: "usedOffers.offerId",
+      })
       .lean();
 
     if (!activeMembership) {
@@ -328,6 +330,7 @@ const getActiveMembership = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   VerifyPaymentandCreateBooking,
