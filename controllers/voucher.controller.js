@@ -7,12 +7,13 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
 
 const createVoucherRedeemtion = async (req, res) => {
   try {
-    const { membershipBookingId, offerId, quantityRequested } = req.body;
+    const { membershipBookingId, categoryId, itemId, quantityRequested } =
+      req.body;
 
-    if (!membershipBookingId || !offerId) {
+    if (!membershipBookingId || !categoryId || !itemId) {
       return res
         .status(400)
-        .json({ success: false, message: "Missing Rquired Fields" });
+        .json({ success: false, message: "Missing Required Fields" });
     }
 
     const booking = await MembershipBooking.findById(membershipBookingId);
@@ -27,7 +28,8 @@ const createVoucherRedeemtion = async (req, res) => {
 
     const redemption = await VoucherRedeemtion.create({
       membershipBookingId,
-      offerId,
+      categoryId,
+      itemId,
       quantityRequested,
       verificationMethod: "OTP",
       otpCode,
@@ -99,9 +101,9 @@ const resendVerifyVoucherCode = async (req, res) => {
 
 const checkVoucherPendingRedemption = async (req, res) => {
   try {
-    const { membershipBookingId, offerId } = req.query;
+    const { membershipBookingId, categoryId, itemId } = req.query;
 
-    if (!membershipBookingId || !offerId) {
+    if (!membershipBookingId || !categoryId) {
       return res
         .status(400)
         .json({ success: false, message: "Missing Required Fields" });
@@ -109,7 +111,8 @@ const checkVoucherPendingRedemption = async (req, res) => {
 
     const pending = await VoucherRedeemtion.findOne({
       membershipBookingId,
-      offerId,
+      categoryId,
+      itemId,
       status: "Pending",
     })
       .sort({ createdAt: -1 })
