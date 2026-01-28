@@ -165,7 +165,7 @@ const getAllRedeemVoucherRequests = async (req, res) => {
     const updatedVouchers = await Promise.all(
       allredeemVouchers.map(async (voucher) => {
         const offer = await OfferCategory.findOne({
-          "items._id": voucher.offerId,
+          "items._id": voucher.categoryId,
         });
 
         let itemName = null;
@@ -174,7 +174,7 @@ const getAllRedeemVoucherRequests = async (req, res) => {
         if (offer) {
           offerTitle = offer.title;
           const item = offer.items.find(
-            (it) => it._id.toString() === voucher.offerId.toString(),
+            (it) => it._id.toString() === voucher.categoryId.toString(),
           );
           itemName = item?.name || null;
         }
