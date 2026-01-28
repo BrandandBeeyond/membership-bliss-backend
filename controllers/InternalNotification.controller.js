@@ -2,7 +2,7 @@ const InternalNotification = require("../models/InternalNotification.model");
 
 const getAllNotifications = async (req, res) => {
   try {
-    const allnotifications = await InternalNotification.findById({
+    const allnotifications = await InternalNotification.find({
       user: req.user._id,
     }).sort({ createdAt: -1 });
 
@@ -14,7 +14,7 @@ const getAllNotifications = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      allnotifications,
+      allnotifications: allnotifications || [],
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
