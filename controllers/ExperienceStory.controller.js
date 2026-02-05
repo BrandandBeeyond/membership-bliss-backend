@@ -72,6 +72,37 @@ const createExperienceStory = async (req, res) => {
           : includedCategories;
     }
 
+    for (let c = 0; c < parsedCategories.length; c++) {
+      const category = parsedCategories[c];
+
+      for (let i = 0; i < category.items.length; i++) {
+        const item = category.items[i];
+        const fileKey = `itemImages[${c}][${i}]`;
+
+        // Upload item image
+        if (req.files?.[fileKey]?.[0]) {
+          const upload = await Cloudinary.v2.uploader.upload(
+            req.files[fileKey][0].path,
+            { folder: "experience/items" },
+          );
+
+          item.image = {
+            public_id: upload.public_id,
+            url: upload.secure_url,
+          };
+        } else {
+          item.image = null;
+        }
+
+        // Normalize amenities
+        if (Array.isArray(item.amenities)) {
+          item.amenities = item.amenities.map((a) => ({
+            title: a.title || a,
+          }));
+        }
+      }
+    }
+
     const newExperience = new ExperienceStory({
       title: title.trim(),
       coverImage,
@@ -117,13 +148,12 @@ const updateExperienceStory = async (req, res) => {
     if (title) experience.title = title.trim();
     if (overviewText) experience.overviewText = overviewText;
 
-    /* ---------- Update Cover Image ---------- */
-    if (req.files?.coverImage) {
-      const coverFile = req.files.coverImage[0];
-
-      const upload = await Cloudinary.v2.uploader.upload(coverFile.path, {
-        folder: "experience/cover",
-      });
+    
+    if (req.files?.coverImage?.[0]) {
+      const upload = await Cloudinary.v2.uploader.upload(
+        req.files.coverImage[0].path,
+        { folder: "experience/cover" }
+      );
 
       experience.coverImage = {
         public_id: upload.public_id,
@@ -131,7 +161,6 @@ const updateExperienceStory = async (req, res) => {
       };
     }
 
-    /* ---------- Add Stories ---------- */
     if (req.files?.stories) {
       for (const file of req.files.stories) {
         const upload = await Cloudinary.v2.uploader.upload(file.path, {
@@ -147,12 +176,39 @@ const updateExperienceStory = async (req, res) => {
       }
     }
 
-    /* ---------- Update Included Categories ---------- */
     if (includedCategories) {
-      experience.includedCategories =
+      let parsed =
         typeof includedCategories === "string"
           ? JSON.parse(includedCategories)
           : includedCategories;
+
+      for (let c = 0; c < parsed.length; c++) {
+        for (let i = 0; i < parsed[c].items.length; i++) {
+          const fileKey = `itemImages[${c}][${i}]`;
+
+          if (req.files?.[fileKey]?.[0]) {
+            const upload = await Cloudinary.v2.uploader.upload(
+              req.files[fileKey][0].path,
+              { folder: "experience/items" }
+            );
+
+            parsed[c].items[i].image = {
+              public_id: upload.public_id,
+              url: upload.secure_url,
+            };
+          }
+
+          // Normalize amenities
+          if (Array.isArray(parsed[c].items[i].amenities)) {
+            parsed[c].items[i].amenities =
+              parsed[c].items[i].amenities.map((a) => ({
+                title: a.title || a,
+              }));
+          }
+        }
+      }
+
+      experience.includedCategories = parsed;
     }
 
     if (order !== undefined) experience.order = Number(order);
@@ -175,6 +231,7 @@ const updateExperienceStory = async (req, res) => {
     });
   }
 };
+
 
 const getAllExperienceStories = async (req, res) => {
   try {
