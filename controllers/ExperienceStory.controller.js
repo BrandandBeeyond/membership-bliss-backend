@@ -101,8 +101,8 @@ const createExperienceStory = async (req, res) => {
 const updateExperienceStory = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const { title, order, isActive } = req.body;
+    const { title, overviewText, order, isActive, includedCategories } =
+      req.body;
 
     const experience = await ExperienceStory.findById(id);
 
@@ -113,41 +113,50 @@ const updateExperienceStory = async (req, res) => {
       });
     }
 
-    if (title) {
-      experience.title = title.trim();
-    }
+    if (title) experience.title = title.trim();
+    if (overviewText) experience.overviewText = overviewText;
 
-    if (req.files && req.files["coverImage"]) {
-      const coverFile = req.files["coverImage"][0];
+    /* ---------- Update Cover Image ---------- */
+    if (req.files?.coverImage) {
+      const coverFile = req.files.coverImage[0];
 
-      const coverUpload = await Cloudinary.v2.uploader.upload(coverFile.path, {
+      const upload = await Cloudinary.v2.uploader.upload(coverFile.path, {
         folder: "experience/cover",
       });
 
       experience.coverImage = {
-        public_id: coverUpload.public_id,
-        url: coverUpload.secure_url,
+        public_id: upload.public_id,
+        url: upload.secure_url,
       };
     }
 
-    if (req.files && req.files["stories"]) {
-      for (const file of req.files["stories"]) {
-        const storyUpload = await Cloudinary.v2.uploader.upload(file.path, {
+    /* ---------- Add Stories ---------- */
+    if (req.files?.stories) {
+      for (const file of req.files.stories) {
+        const upload = await Cloudinary.v2.uploader.upload(file.path, {
           folder: "experience/stories",
         });
 
         experience.stories.push({
           image: {
-            public_id: storyUpload.public_id,
-            url: storyUpload.secure_url,
+            public_id: upload.public_id,
+            url: upload.secure_url,
           },
         });
       }
     }
 
+    /* ---------- Update Included Categories ---------- */
+    if (includedCategories) {
+      experience.includedCategories =
+        typeof includedCategories === "string"
+          ? JSON.parse(includedCategories)
+          : includedCategories;
+    }
+
     if (order !== undefined) experience.order = Number(order);
     if (isActive !== undefined)
-      experience.isActive = isActive === "true" || isActive === true;
+      experience.isActive = isActive === true || isActive === "true";
 
     await experience.save();
 
@@ -168,21 +177,14 @@ const updateExperienceStory = async (req, res) => {
 
 const getAllExperienceStories = async (req, res) => {
   try {
-    const allexperiences = await ExperienceStory.find();
-
-    if (allexperiences.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "no experiences found",
-      });
-    }
+    const experiences = await ExperienceStory.find().sort({ order: 1 });
 
     return res.status(200).json({
       success: true,
-      data: allexperiences,
+      data: experiences,
     });
   } catch (error) {
-    console.error("fetch experiences failed:", error);
+    console.error("Fetch Experiences Failed:", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
