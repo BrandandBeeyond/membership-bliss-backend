@@ -3,12 +3,13 @@ const ExperienceStory = require("../models/Experiencestory.model");
 
 const createExperienceStory = async (req, res) => {
   try {
-    const { title, order, isActive } = req.body;
+    const { title, overviewText, order, isActive, includedCategories } =
+      req.body;
 
-    if (!title) {
+    if (!title || !overviewText) {
       return res.status(400).json({
         success: false,
-        message: "title is required",
+        message: "title and overview text is required",
       });
     }
 
@@ -62,10 +63,20 @@ const createExperienceStory = async (req, res) => {
       });
     }
 
+    let parsedCategories = [];
+
+    if (includedCategories) {
+      parsedCategories =
+        typeof includedCategories === "string"
+          ? JSON.parse(includedCategories)
+          : includedCategories;
+    }
+
     const newExperience = new ExperienceStory({
-      title,
+      title: title.trim(),
       coverImage,
       stories,
+      includedCategories: parsedCategories,
       order: order || 0,
       isActive: isActive !== undefined ? isActive : true,
     });

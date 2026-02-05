@@ -1,43 +1,92 @@
 const mongoose = require("mongoose");
 
-const ExperienceStorySchema = new mongoose.Schema({
+const ImageSchema = {
+  public_id: String,
+  url: String,
+};
+
+const AmenitySchema = {
   title: {
     type: String,
-    required: true,
   },
-  coverImage: {
-    public_id: {
+  icon: ImageSchema,
+};
+
+const CategoryItemSchema = new mongoose.Schema(
+  {
+    title: {
       type: String,
-      required: [true, "Please upload cover image"],
     },
-    url: {
+    description: {
       type: String,
-      required: [true, "Please upload cover image"],
     },
+    image: ImageSchema,
+
+    amenities: [AmenitySchema],
   },
-  stories: [
-    {
-      image: {
-        public_id: {
-          type: String,
-          required: [false, "Please upload story image"],
-        },
-        url: {
-          type: String,
-          required: [false, "Please upload story image"],
-        },
+  { _id: false },
+);
+
+const IncludedCategorySchema = new mongoose.Schema(
+  {
+    categoryKey: {
+      type: String,
+      required: true,
+    },
+
+    overviewText: {
+      type: String,
+      required: true,
+    },
+
+    items: [CategoryItemSchema],
+  },
+  { _id: false },
+);
+
+const ExperienceStorySchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+
+    coverImage: {
+      public_id: {
+        type: String,
+        required: true,
+      },
+      url: {
+        type: String,
+        required: true,
       },
     },
-  ],
-  order: {
-    type: Number,
-    default: 0,
+
+    overviewText: {
+      type: String,
+      required: true,
+    },
+
+    stories: [
+      {
+        image: ImageSchema,
+      },
+    ],
+
+    includedCategories: [IncludedCategorySchema],
+
+    order: {
+      type: Number,
+      default: 0,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
-  isActive: {
-    type: Boolean,
-    default: true,
-  },
-});
+  { timestamps: true },
+);
 
 const ExperienceStory = mongoose.model(
   "ExperienceStory",
