@@ -10,10 +10,7 @@ const experienceStoryRouter = require("express").Router();
 
 experienceStoryRouter.post(
   "/addstory",
-  upload.fields([
-    { name: "coverImage", maxCount: 1 },
-    { name: "stories", maxCount: 10 },
-  ]),
+  upload.any(),
   ProtectedAdmin,
   AuthorizeRoles("ADMIN", "SUPER_ADMIN"),
   createExperienceStory,
@@ -21,6 +18,7 @@ experienceStoryRouter.post(
 
 experienceStoryRouter.put(
   "/update/:id",
+  upload.any(),
   ProtectedAdmin,
   AuthorizeRoles("ADMIN", "SUPER_ADMIN"),
   updateExperienceStory,
