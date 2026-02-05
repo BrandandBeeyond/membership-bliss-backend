@@ -75,6 +75,7 @@ const createExperienceStory = async (req, res) => {
     const newExperience = new ExperienceStory({
       title: title.trim(),
       coverImage,
+      overviewText,
       stories,
       includedCategories: parsedCategories,
       order: order || 0,
