@@ -77,7 +77,7 @@ const sendOTP = async (req, res) => {
     const msg = `Your OTP is ${otp} to log in to the Touchwood Membership App. Wishing you calm moments in`;
 
     const url = `https://kutility.org/app/smsapi/index.php?key=${OTP_API_KEY}&campaign=${OTP_CAMPAIGN}&routeid=${OTP_ROUTE}&type=text&contacts=${phone}&senderid=${OTP_SENDER}&msg=${encodeURIComponent(
-      msg
+      msg,
     )}&template_id=${OTP_TEMPLATE}&pe_id=${OTP_PE_ID}`;
 
     const response = await axios.get(url);
@@ -92,7 +92,7 @@ const sendOTP = async (req, res) => {
     await Otp.findOneAndUpdate(
       { phone },
       { otp, otpExpiry },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
     return res.json({
@@ -151,9 +151,9 @@ const verifyOTP = async (req, res) => {
         phone,
         loginType: "otp",
         isVerified: true,
-        fullname: "",
-        email: "",
-        city: "",
+        fullname: null,
+        email: null,
+        city: null,
         profileCompleted: false,
       });
     } else {
