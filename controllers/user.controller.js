@@ -149,9 +149,9 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    await Otp.deleteOne({ phone });
+    await Otp.deleteOne({ phone: cleanPhone });
 
-    let user = await User.findOne({ phone });
+    let user = await User.findOne({ phone: cleanPhone });
 
     if (!user) {
       user = await User.create({
