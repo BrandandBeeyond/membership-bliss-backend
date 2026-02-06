@@ -12,8 +12,7 @@ experienceStoryRouter.post(
   "/addstory",
   upload.fields([
     { name: "coverImage", maxCount: 1 },
-    { name: "stories", maxCount: 7 },
-    { name: "itemImages", maxCount: 5 },
+    { name: "stories", maxCount: 10 },
   ]),
   ProtectedAdmin,
   AuthorizeRoles("ADMIN", "SUPER_ADMIN"),
@@ -22,7 +21,10 @@ experienceStoryRouter.post(
 
 experienceStoryRouter.put(
   "/update/:id",
-  upload.any(),
+  upload.fields([
+    { name: "coverImage", maxCount: 1 },
+    { name: "stories", maxCount: 10 },
+  ]),
   ProtectedAdmin,
   AuthorizeRoles("ADMIN", "SUPER_ADMIN"),
   updateExperienceStory,

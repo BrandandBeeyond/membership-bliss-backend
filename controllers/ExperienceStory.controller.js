@@ -3,32 +3,34 @@ const ExperienceStory = require("../models/Experiencestory.model");
 
 const createExperienceStory = async (req, res) => {
   try {
-    const { title, overviewText, order, isActive, includedCategories } =
-      req.body;
+    const { title, overviewText, types } = req.body;
 
     if (!title || !overviewText) {
       return res.status(400).json({
         success: false,
-        message: "title and overview text is required",
+        message: "Title and overview text are required",
       });
     }
 
-    if (
-      !req.files ||
-      !req.files["coverImage"] ||
-      req.files["coverImage"].length === 0
-    ) {
+    if (!req.files?.coverImage?.[0]) {
       return res.status(400).json({
         success: false,
         message: "Cover image is required",
       });
     }
 
-    const coverfile = req.files["coverImage"][0];
+    const existing = await ExperienceStory.findOne({ title: title.trim() });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Experience with this title already exists",
+      });
+    }
 
-    const coverUpload = await Cloudinary.v2.uploader.upload(coverfile.path, {
-      folder: "experience/cover",
-    });
+    const coverUpload = await Cloudinary.v2.uploader.upload(
+      req.files.coverImage[0].path,
+      { folder: "experience/cover" },
+    );
 
     const coverImage = {
       public_id: coverUpload.public_id,
@@ -36,89 +38,46 @@ const createExperienceStory = async (req, res) => {
     };
 
     let stories = [];
-
-    if (req.files["stories"]) {
-      for (const file of req.files["stories"]) {
-        const storyUpload = await Cloudinary.v2.uploader.upload(file.path, {
+    if (req.files?.stories) {
+      for (const file of req.files.stories) {
+        const upload = await Cloudinary.v2.uploader.upload(file.path, {
           folder: "experience/stories",
         });
 
         stories.push({
           image: {
-            public_id: storyUpload.public_id,
-            url: storyUpload.secure_url,
+            public_id: upload.public_id,
+            url: upload.secure_url,
           },
         });
       }
     }
 
-    const exisitingStory = await ExperienceStory.findOne({
-      title,
-    });
+    let parsedTypes = [];
+    if (types) {
+      parsedTypes = typeof types === "string" ? JSON.parse(types) : types;
 
-    if (exisitingStory) {
-      return res.status(400).json({
-        success: false,
-        message: "Experience with this title already exists",
-      });
+      parsedTypes = parsedTypes.map((t) => ({
+        title: t.title,
+        description: t.description,
+        amenities: Array.isArray(t.amenities)
+          ? t.amenities.map((a) => ({ title: a.title || a }))
+          : [],
+      }));
     }
 
-    let parsedCategories = [];
-
-    if (includedCategories) {
-      parsedCategories =
-        typeof includedCategories === "string"
-          ? JSON.parse(includedCategories)
-          : includedCategories;
-    }
-
-    for (let c = 0; c < parsedCategories.length; c++) {
-      const category = parsedCategories[c];
-
-      for (let i = 0; i < category.items.length; i++) {
-        const item = category.items[i];
-        const fileKey = `itemImages[${c}][${i}]`;
-
-        // Upload item image
-        if (req.files?.[fileKey]?.[0]) {
-          const upload = await Cloudinary.v2.uploader.upload(
-            req.files[fileKey][0].path,
-            { folder: "experience/items" },
-          );
-
-          item.image = {
-            public_id: upload.public_id,
-            url: upload.secure_url,
-          };
-        } else {
-          item.image = null;
-        }
-
-        // Normalize amenities
-        if (Array.isArray(item.amenities)) {
-          item.amenities = item.amenities.map((a) => ({
-            title: a.title || a,
-          }));
-        }
-      }
-    }
-
-    const newExperience = new ExperienceStory({
+    const experience = await ExperienceStory.create({
       title: title.trim(),
-      coverImage,
       overviewText,
+      coverImage,
       stories,
-      includedCategories: parsedCategories,
-      order: order || 0,
-      isActive: isActive !== undefined ? isActive : true,
+      types: parsedTypes, // can be empty []
     });
-
-    await newExperience.save();
 
     return res.status(201).json({
       success: true,
       message: "Experience story created successfully",
-      data: newExperience,
+      data: experience,
     });
   } catch (error) {
     console.error("Create Experience Failed:", error);
@@ -133,11 +92,9 @@ const createExperienceStory = async (req, res) => {
 const updateExperienceStory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, overviewText, order, isActive, includedCategories } =
-      req.body;
+    const { title, overviewText, types } = req.body;
 
     const experience = await ExperienceStory.findById(id);
-
     if (!experience) {
       return res.status(404).json({
         success: false,
@@ -148,11 +105,10 @@ const updateExperienceStory = async (req, res) => {
     if (title) experience.title = title.trim();
     if (overviewText) experience.overviewText = overviewText;
 
-    
     if (req.files?.coverImage?.[0]) {
       const upload = await Cloudinary.v2.uploader.upload(
         req.files.coverImage[0].path,
-        { folder: "experience/cover" }
+        { folder: "experience/cover" },
       );
 
       experience.coverImage = {
@@ -176,50 +132,23 @@ const updateExperienceStory = async (req, res) => {
       }
     }
 
-    if (includedCategories) {
-      let parsed =
-        typeof includedCategories === "string"
-          ? JSON.parse(includedCategories)
-          : includedCategories;
+    if (types) {
+      let parsedTypes = typeof types === "string" ? JSON.parse(types) : types;
 
-      for (let c = 0; c < parsed.length; c++) {
-        for (let i = 0; i < parsed[c].items.length; i++) {
-          const fileKey = `itemImages[${c}][${i}]`;
-
-          if (req.files?.[fileKey]?.[0]) {
-            const upload = await Cloudinary.v2.uploader.upload(
-              req.files[fileKey][0].path,
-              { folder: "experience/items" }
-            );
-
-            parsed[c].items[i].image = {
-              public_id: upload.public_id,
-              url: upload.secure_url,
-            };
-          }
-
-          // Normalize amenities
-          if (Array.isArray(parsed[c].items[i].amenities)) {
-            parsed[c].items[i].amenities =
-              parsed[c].items[i].amenities.map((a) => ({
-                title: a.title || a,
-              }));
-          }
-        }
-      }
-
-      experience.includedCategories = parsed;
+      experience.types = parsedTypes.map((t) => ({
+        title: t.title,
+        description: t.description,
+        amenities: Array.isArray(t.amenities)
+          ? t.amenities.map((a) => ({ title: a.title || a }))
+          : [],
+      }));
     }
-
-    if (order !== undefined) experience.order = Number(order);
-    if (isActive !== undefined)
-      experience.isActive = isActive === true || isActive === "true";
 
     await experience.save();
 
     return res.status(200).json({
       success: true,
-      message: "Experience updated successfully",
+      message: "Experience story updated successfully",
       data: experience,
     });
   } catch (error) {
@@ -231,7 +160,6 @@ const updateExperienceStory = async (req, res) => {
     });
   }
 };
-
 
 const getAllExperienceStories = async (req, res) => {
   try {

@@ -8,45 +8,34 @@ const ImageSchema = {
 const AmenitySchema = {
   title: {
     type: String,
+    required: true,
   },
   icon: ImageSchema,
 };
 
-const CategoryItemSchema = new mongoose.Schema(
+const ExperienceTypeSchema = new mongoose.Schema(
   {
     title: {
       type: String,
+      required: true,
     },
     description: {
       type: String,
     },
     image: ImageSchema,
-
     amenities: [AmenitySchema],
   },
-  { _id: false },
-);
-
-const IncludedCategorySchema = new mongoose.Schema(
-  {
-    categoryKey: {
-      type: String,
-      required: true,
-    },
-
-    overviewText: {
-      type: String,
-      required: true,
-    },
-
-    items: [CategoryItemSchema],
-  },
-  { _id: false },
+  { _id: false }
 );
 
 const ExperienceStorySchema = new mongoose.Schema(
   {
     title: {
+      type: String,
+      required: true,
+    },
+
+    overviewText: {
       type: String,
       required: true,
     },
@@ -62,35 +51,24 @@ const ExperienceStorySchema = new mongoose.Schema(
       },
     },
 
-    overviewText: {
-      type: String,
-      required: true,
-    },
-
     stories: [
       {
         image: ImageSchema,
       },
     ],
 
-    includedCategories: [IncludedCategorySchema],
+   
+    types: {
+      type: [ExperienceTypeSchema],
+      default: [],
+    },
 
     order: {
       type: Number,
       default: 0,
     },
-
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-const ExperienceStory = mongoose.model(
-  "ExperienceStory",
-  ExperienceStorySchema,
-);
-
-module.exports = ExperienceStory;
+module.exports = mongoose.model("ExperienceStory", ExperienceStorySchema);
