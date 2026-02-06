@@ -155,11 +155,10 @@ const verifyOTP = async (req, res) => {
 
     if (!user) {
       user = await User.create({
-        phone,
+        phone: cleanPhone,
         loginType: "otp",
         isVerified: true,
         fullname: null,
-        email: null,
         city: null,
         profileCompleted: false,
       });
