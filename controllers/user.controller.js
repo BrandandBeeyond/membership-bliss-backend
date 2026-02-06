@@ -89,8 +89,12 @@ const sendOTP = async (req, res) => {
       });
     }
 
+    const normalizePhone = (phone) => phone.replace(/\D/g, "");
+
+    const cleanPhone = normalizePhone(phone);
+
     await Otp.findOneAndUpdate(
-      { phone },
+      { phone: cleanPhone },
       { otp, otpExpiry },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
@@ -119,7 +123,10 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    const otpRecord = await Otp.findOne({ phone });
+    const normalizePhone = (phone) => phone.replace(/\D/g, "");
+    const cleanPhone = normalizePhone(phone);
+
+    const otpRecord = await Otp.findOne({ phone: cleanPhone });
 
     if (!otpRecord) {
       return res.status(404).json({
