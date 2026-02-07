@@ -74,7 +74,7 @@ const sendOTP = async (req, res) => {
     const otp = generateOTP();
     const otpExpiry = Date.now() + 5 * 60 * 1000;
 
-    const msg = `Your Touchwood Bliss Membership login OTP is ${otp}. Do not share this code with anyone.`;
+    const msg = `Your OTP is ${otp} to log in to the Touchwood Membership App. Wishing you calm moments in`;
 
     const url = `https://kutility.org/app/smsapi/index.php?key=${OTP_API_KEY}&campaign=${OTP_CAMPAIGN}&routeid=${OTP_ROUTE}&type=text&contacts=${phone}&senderid=${OTP_SENDER}&msg=${encodeURIComponent(
       msg,
