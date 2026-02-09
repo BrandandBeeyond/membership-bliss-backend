@@ -19,6 +19,7 @@ const OTP_PE_ID = process.env.OTP_PE_ID;
 const APP_BASE_URL = process.env.APP_BASE_URL;
 
 const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
+const ANDROID_APP_SIGNATURE = process.env.ANDROID_APP_SIGNATURE;
 
 module.exports = {
   PORT,
@@ -40,4 +41,5 @@ module.exports = {
   OTP_PE_ID,
   APP_BASE_URL,
   SUPER_ADMIN_PASSWORD,
+  ANDROID_APP_SIGNATURE,
 };
