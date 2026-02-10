@@ -6,10 +6,12 @@ const Qrcode = require("qrcode");
 const createNotification = require("../config/createNotification");
 const OfferCategory = require("../models/Offercategory.model");
 const admin = require("firebase-admin");
-const ServiceAccount = require("../config/ServiceAccountKey");
+
 const User = require("../models/User.model");
 
 if (!admin.apps.length) {
+  const ServiceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
   admin.initializeApp({
     credential: admin.credential.cert(ServiceAccount),
   });

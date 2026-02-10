@@ -262,7 +262,9 @@ const saveFcmToken = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Token required" });
 
-    await User.findByIdAndUpdate(req.user._id, { fcmToken: token });
+    const userId = req.user._id || req.userId;
+
+    await User.findByIdAndUpdate(userId, { fcmToken: token });
     return res.json({ success: true });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
