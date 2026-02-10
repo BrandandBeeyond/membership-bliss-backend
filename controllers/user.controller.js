@@ -253,6 +253,22 @@ const completeUserProfile = async (req, res) => {
   }
 };
 
+const saveFcmToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token)
+      return res
+        .status(400)
+        .json({ success: false, message: "Token required" });
+
+    await User.findByIdAndUpdate(req.user._id, { fcmToken: token });
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const logoutUser = async (req, res) => {
   try {
     return res.status(200).json({
@@ -273,4 +289,5 @@ module.exports = {
   verifyOTP,
   completeUserProfile,
   logoutUser,
+  saveFcmToken,
 };
