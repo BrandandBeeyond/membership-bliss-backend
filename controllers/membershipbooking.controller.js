@@ -5,6 +5,15 @@ const { APP_BASE_URL } = require("../utils/config");
 const Qrcode = require("qrcode");
 const createNotification = require("../config/createNotification");
 const OfferCategory = require("../models/Offercategory.model");
+const admin = require("firebase-admin");
+const ServiceAccount = require("../config/ServiceAccountKey");
+const User = require("../models/User.model");
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(ServiceAccount),
+  });
+}
 
 const VerifyPaymentandCreateBooking = async (req, res) => {
   try {
@@ -93,6 +102,19 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       message: `Your membership is active till ${endDate.toDateString()}`,
       type: "booking",
     });
+
+    const user = await User.findById(userId);
+    const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
+
+    if (user?.fcmToken) {
+      await admin.messaging().send({
+        token: user.fcmToken,
+        notification: {
+          title: `Congratulations ${firstName}`,
+          body: `Membership Activated. Your membership is active till ${endDate.toDateString()}`,
+        },
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -284,6 +306,24 @@ const updateArrivalStatus = async (req, res) => {
     }
 
     await booking.save();
+
+    const user = await User.findById(booking.userId);
+    const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
+
+    if (user?.fcmToken) {
+      const isApproved = arrivalStatus === "Approved";
+      await admin.messaging().send({
+        token: user.fcmToken,
+        notification: {
+          title: isApproved
+            ? `Arrival Approved, ${firstName}`
+            : `Arrival Rejected, ${firstName}`,
+          body: isApproved
+            ? `Your arrival request is approved for ${booking.arrivalDate.toDateString()}`
+            : "Your arrival request was rejected. Please contact support.",
+        },
+      });
+    }
 
     return res.status(200).json({
       success: true,
