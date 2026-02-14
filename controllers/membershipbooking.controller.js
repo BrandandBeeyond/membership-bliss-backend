@@ -264,7 +264,7 @@ const requestUserArrival = async (req, res) => {
     const booking = await MembershipBooking.findOneAndUpdate(
       { _id: bookingId, userId, status: "Active" },
       { $set: { arrivalDate: parsedDate, arrivalStatus: "Pending" } },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     );
 
     return res.status(200).json({
@@ -324,8 +324,67 @@ const updateArrivalStatus = async (req, res) => {
     const updatedBooking = await MembershipBooking.findByIdAndUpdate(
       id,
       { $set: update },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     );
+
+    const user = await User.findById(updatedBooking.userId).select(
+      "fullname fcmToken",
+    );
+    const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
+
+    if (!user?.fcmToken) {
+      console.log("No FCM token for user:", updatedBooking.userId.toString());
+    } else {
+      try {
+        const isApproved = arrivalStatus === "Approved";
+
+        const message = {
+          token: user.fcmToken,
+          notification: {
+            title: isApproved
+              ? `Arrival Approved, ${firstName}`
+              : `Arrival Rejected, ${firstName}`,
+            body: isApproved
+              ? `Your arrival request is approved for ${updatedBooking.arrivalDate.toDateString()}`
+              : "Your arrival request was rejected. Please contact support.",
+          },
+          data: {
+            type: "ARRIVAL_STATUS",
+            bookingId: String(updatedBooking._id),
+            status: arrivalStatus,
+          },
+          android: {
+            priority: "high",
+          },
+          apns: {
+            headers: { "apns-priority": "10" },
+          },
+        };
+
+        const messageId = await admin.messaging().send(message);
+        console.log(
+          "FCM sent:",
+          messageId,
+          "to user:",
+          updatedBooking.userId.toString(),
+        );
+      } catch (err) {
+        console.error("FCM send error:", err?.code, err?.message);
+
+        if (
+          err?.code === "messaging/registration-token-not-registered" ||
+          err?.code === "messaging/invalid-registration-token"
+        ) {
+          await User.findByIdAndUpdate(updatedBooking.userId, {
+            $unset: { fcmToken: 1 },
+          });
+          console.log(
+            "Removed invalid FCM token for user:",
+            updatedBooking.userId.toString(),
+          );
+        }
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -340,8 +399,6 @@ const updateArrivalStatus = async (req, res) => {
     });
   }
 };
-
-
 
 const getActiveMembership = async (req, res) => {
   try {
