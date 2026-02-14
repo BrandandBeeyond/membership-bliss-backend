@@ -22,8 +22,9 @@ membershipbookingRouter.post(
 membershipbookingRouter.get("/booking/my", isAuth, getbookedMembershipDetail);
 membershipbookingRouter.get("/userbookings/all", isAuth, getUserBookings);
 membershipbookingRouter.post("/request-arrival", isAuth, requestUserArrival);
+
 membershipbookingRouter.post(
-  "/cancel-arrival-request",
+  "/cancel-user-arrival",
   isAuth,
   cancelUserArrivalRequest,
 );
