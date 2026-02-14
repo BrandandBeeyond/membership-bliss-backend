@@ -227,45 +227,33 @@ const requestUserArrival = async (req, res) => {
     const userId = req.user?._id;
 
     if (!bookingId || !arrivalDate) {
-      return res.status(400).json({
-        success: false,
-        message: "booking Id and arrival date required",
-      });
+      return res.status(400).json({ success: false, message: "booking Id and arrival date required" });
     }
 
     const parsedDate = new Date(arrivalDate);
     if (Number.isNaN(parsedDate.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid arrival date",
-      });
+      return res.status(400).json({ success: false, message: "Invalid arrival date" });
     }
 
-    const booking = await MembershipBooking.findOne({
+    const existing = await MembershipBooking.findOne({
       _id: bookingId,
       userId,
       status: "Active",
     });
 
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Membership booking not found",
-      });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Membership booking not found" });
     }
 
-    if (booking.arrivalStatus === "Approved") {
-      return res.status(409).json({
-        success: false,
-        message: "User arrival date is already approved",
-      });
+    if (existing.arrivalStatus === "Approved") {
+      return res.status(409).json({ success: false, message: "User arrival date is already approved" });
     }
 
-    booking.arrivalDate = parsedDate;
-    booking.arrivalStatus = "Pending";
-
-    // Prevent unrelated legacy field validation failures (e.g. usedOffers.redemptionId)
-    await booking.save({ validateModifiedOnly: true });
+    const booking = await MembershipBooking.findOneAndUpdate(
+      { _id: bookingId, userId, status: "Active" },
+      { $set: { arrivalDate: parsedDate, arrivalStatus: "Pending" } },
+      { returnDocument: "after" } // Mongoose 8 style (replaces `new: true`)
+    );
 
     return res.status(200).json({
       success: true,
@@ -274,12 +262,10 @@ const requestUserArrival = async (req, res) => {
     });
   } catch (error) {
     console.error("Arrival request failed:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
 
 const updateArrivalStatus = async (req, res) => {
   try {
@@ -287,73 +273,41 @@ const updateArrivalStatus = async (req, res) => {
     const { arrivalStatus, arrivalDate } = req.body;
 
     if (!["Approved", "Rejected"].includes(arrivalStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid arrival status",
-      });
+      return res.status(400).json({ success: false, message: "Invalid arrival status" });
     }
 
     const booking = await MembershipBooking.findById(id);
-
     if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Membership booking not found",
-      });
+      return res.status(404).json({ success: false, message: "Membership booking not found" });
     }
 
     if (booking.arrivalStatus !== "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Arrival request already processed",
-      });
+      return res.status(400).json({ success: false, message: "Arrival request already processed" });
     }
 
-    booking.arrivalStatus = arrivalStatus;
-
+    const update = { arrivalStatus };
     if (arrivalStatus === "Approved") {
-      const parsedDate = arrivalDate ? new Date(arrivalDate) : new Date();
-      if (Number.isNaN(parsedDate.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid arrival date",
-        });
+      const parsed = arrivalDate ? new Date(arrivalDate) : new Date();
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({ success: false, message: "Invalid arrival date" });
       }
-      booking.arrivalDate = parsedDate;
+      update.arrivalDate = parsed;
     }
 
-    // Prevent unrelated legacy field validation failures
-    await booking.save({ validateModifiedOnly: true });
-
-    const user = await User.findById(booking.userId);
-    const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
-
-    if (user?.fcmToken) {
-      const isApproved = arrivalStatus === "Approved";
-      await admin.messaging().send({
-        token: user.fcmToken,
-        notification: {
-          title: isApproved
-            ? `Arrival Approved, ${firstName}`
-            : `Arrival Rejected, ${firstName}`,
-          body: isApproved
-            ? `Your arrival request is approved for ${booking.arrivalDate.toDateString()}`
-            : "Your arrival request was rejected. Please contact support.",
-        },
-      });
-    }
+    const updatedBooking = await MembershipBooking.findByIdAndUpdate(
+      id,
+      { $set: update },
+      { returnDocument: "after" }
+    );
 
     return res.status(200).json({
       success: true,
       message: `Arrival ${arrivalStatus.toLowerCase()} successfully`,
-      booking,
+      booking: updatedBooking,
     });
   } catch (error) {
     console.error("Arrival Approval Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
