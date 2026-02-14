@@ -402,6 +402,57 @@ const updateArrivalStatus = async (req, res) => {
   }
 };
 
+const cancelUserArrivalRequest = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    const userId = req.user?._id;
+
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: "bookingId is required",
+      });
+    }
+
+    const booking = await MembershipBooking.findOne({
+      _id: bookingId,
+      userId,
+      status: "Active",
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Membership booking not found",
+      });
+    }
+
+    if (booking.arrivalStatus !== "Pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Only pending arrival request can be cancelled",
+      });
+    }
+
+    const updatedBooking = await MembershipBooking.findOneAndUpdate(
+      { _id: bookingId, userId, status: "Active" },
+      { $set: { arrivalStatus: "NotRequested", arrivalDate: null } },
+      { returnDocument: "after" }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Arrival request cancelled successfully",
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Cancel arrival request failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
 
 const getActiveMembership = async (req, res) => {
   try {
@@ -463,4 +514,5 @@ module.exports = {
   requestUserArrival,
   updateArrivalStatus,
   getActiveMembership,
+  cancelUserArrivalRequest
 };

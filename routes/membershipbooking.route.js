@@ -6,6 +6,7 @@ const {
   requestUserArrival,
   updateArrivalStatus,
   getActiveMembership,
+  cancelUserArrivalRequest,
 } = require("../controllers/membershipbooking.controller");
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 const { isAuth } = require("../middlewares/middleware");
@@ -21,6 +22,12 @@ membershipbookingRouter.post(
 membershipbookingRouter.get("/booking/my", isAuth, getbookedMembershipDetail);
 membershipbookingRouter.get("/userbookings/all", isAuth, getUserBookings);
 membershipbookingRouter.post("/request-arrival", isAuth, requestUserArrival);
+membershipbookingRouter.post(
+  "/cancel-arrival-request",
+  isAuth,
+  cancelUserArrivalRequest,
+);
+
 membershipbookingRouter.get("/active", isAuth, getActiveMembership);
 
 // for admin panel
