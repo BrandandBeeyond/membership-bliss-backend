@@ -13,7 +13,8 @@ const usedOffersSchema = new mongoose.Schema({
   redemptionId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "VoucherRedeemtion",
-    required: true,
+    required: false,
+    default:null
   },
   quantityUsed: {
     type: Number,
