@@ -224,13 +224,20 @@ const getAllBookings = async (req, res) => {
 const requestUserArrival = async (req, res) => {
   try {
     const { bookingId, arrivalDate } = req.body;
-
-    const userId = req.user._id;
+    const userId = req.user?._id;
 
     if (!bookingId || !arrivalDate) {
       return res.status(400).json({
         success: false,
         message: "booking Id and arrival date required",
+      });
+    }
+
+    const parsedDate = new Date(arrivalDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid arrival date",
       });
     }
 
@@ -254,10 +261,11 @@ const requestUserArrival = async (req, res) => {
       });
     }
 
-    booking.arrivalDate = new Date(arrivalDate);
+    booking.arrivalDate = parsedDate;
     booking.arrivalStatus = "Pending";
 
-    await booking.save();
+    // Prevent unrelated legacy field validation failures (e.g. usedOffers.redemptionId)
+    await booking.save({ validateModifiedOnly: true });
 
     return res.status(200).json({
       success: true,
@@ -266,7 +274,7 @@ const requestUserArrival = async (req, res) => {
     });
   } catch (error) {
     console.error("Arrival request failed:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Internal Server Error",
     });
@@ -304,10 +312,18 @@ const updateArrivalStatus = async (req, res) => {
     booking.arrivalStatus = arrivalStatus;
 
     if (arrivalStatus === "Approved") {
-      booking.arrivalDate = arrivalDate || new Date();
+      const parsedDate = arrivalDate ? new Date(arrivalDate) : new Date();
+      if (Number.isNaN(parsedDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid arrival date",
+        });
+      }
+      booking.arrivalDate = parsedDate;
     }
 
-    await booking.save();
+    // Prevent unrelated legacy field validation failures
+    await booking.save({ validateModifiedOnly: true });
 
     const user = await User.findById(booking.userId);
     const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
@@ -329,17 +345,18 @@ const updateArrivalStatus = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Arrival ${arrivalStatus.toLowerCase()} Successfully`,
+      message: `Arrival ${arrivalStatus.toLowerCase()} successfully`,
       booking,
     });
   } catch (error) {
     console.error("Arrival Approval Error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error",
     });
   }
 };
+
 
 const getActiveMembership = async (req, res) => {
   try {
