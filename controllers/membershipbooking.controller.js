@@ -8,6 +8,7 @@ const OfferCategory = require("../models/Offercategory.model");
 const admin = require("firebase-admin");
 
 const User = require("../models/User.model");
+const PhysicalcardRequest = require("../models/PhysicalcardRequest.model");
 
 if (!admin.apps.length) {
   const ServiceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -326,11 +327,11 @@ const updateArrivalStatus = async (req, res) => {
     const updatedBooking = await MembershipBooking.findByIdAndUpdate(
       id,
       { $set: update },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     );
 
     const user = await User.findById(updatedBooking.userId).select(
-      "fullname fcmToken"
+      "fullname fcmToken",
     );
     const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
 
@@ -437,7 +438,7 @@ const cancelUserArrivalRequest = async (req, res) => {
     const updatedBooking = await MembershipBooking.findOneAndUpdate(
       { _id: bookingId, userId, status: "Active" },
       { $set: { arrivalStatus: "NotRequested", arrivalDate: null } },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     );
 
     return res.status(200).json({
@@ -506,6 +507,74 @@ const getActiveMembership = async (req, res) => {
   }
 };
 
+const requestphysicalCard = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const { bookingId, fullname, email, phone, address, city, state } =
+      req.body;
+
+    if (
+      !bookingId ||
+      !fullname ||
+      !email ||
+      !phone ||
+      !address ||
+      !city ||
+      !state
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    const booking = await MembershipBooking.findOne({ _id: bookingId, userId });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Membership booking not found",
+      });
+    }
+
+    const exisitingPending = await PhysicalcardRequest.findOne({
+      bookingId,
+      status: "Pending",
+    });
+
+    if (exisitingPending) {
+      return res.status(409).json({
+        success: false,
+        message: "A pending physical card request already exists",
+      });
+    }
+
+    const cardRequest = await PhysicalcardRequest.create({
+      bookingId,
+      userId,
+      fullname,
+      email,
+      phone,
+      address,
+      city,
+      state,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Physical card request submitted",
+      data: cardRequest,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Unable to submit physical card request",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   VerifyPaymentandCreateBooking,
   getbookedMembershipDetail,
@@ -514,5 +583,6 @@ module.exports = {
   requestUserArrival,
   updateArrivalStatus,
   getActiveMembership,
-  cancelUserArrivalRequest
+  cancelUserArrivalRequest,
+  requestphysicalCard,
 };
