@@ -30,7 +30,7 @@ membershipbookingRouter.post(
   isAuth,
   cancelUserArrivalRequest,
 );
-membershipbookingRouter.post("/request-card", isAuth, requestphysicalCard);
+membershipbookingRouter.post("/request-physical-card", isAuth, requestphysicalCard);
 
 membershipbookingRouter.get("/active", isAuth, getActiveMembership);
 
