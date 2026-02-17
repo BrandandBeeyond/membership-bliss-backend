@@ -1,7 +1,7 @@
 const MembershipBooking = require("../models/MembershipBooking.model");
 const PhysicalcardRequest = require("../models/PhysicalcardRequest.model");
 
-const RequestPhysicalCard = async (req, res) => {
+const requestphysicalCard = async (req, res) => {
   try {
     const userId = req.user._id;
 
@@ -69,4 +69,4 @@ const RequestPhysicalCard = async (req, res) => {
   }
 };
 
-module.exports = { RequestPhysicalCard };
+module.exports = { requestphysicalCard };

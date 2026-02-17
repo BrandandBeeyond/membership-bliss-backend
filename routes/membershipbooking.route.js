@@ -9,8 +9,9 @@ const {
   cancelUserArrivalRequest,
 } = require("../controllers/membershipbooking.controller");
 const {
-  RequestPhysicalCard,
+  requestphysicalCard,
 } = require("../controllers/physcialcardrequest.controller");
+
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 const { isAuth } = require("../middlewares/middleware");
 
@@ -32,9 +33,9 @@ membershipbookingRouter.post(
   cancelUserArrivalRequest,
 );
 membershipbookingRouter.post(
-  "/request-physical-card",
+  "/request-card",
   isAuth,
-  RequestPhysicalCard,
+  requestphysicalCard,
 );
 
 membershipbookingRouter.get("/active", isAuth, getActiveMembership);
