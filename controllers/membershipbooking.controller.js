@@ -510,7 +510,6 @@ const getActiveMembership = async (req, res) => {
 const requestphysicalCard = async (req, res) => {
   try {
     const userId = req.user._id;
-
     const { bookingId, fullname, email, phone, address, city, state } =
       req.body;
 
@@ -530,7 +529,6 @@ const requestphysicalCard = async (req, res) => {
     }
 
     const booking = await MembershipBooking.findOne({ _id: bookingId, userId });
-
     if (!booking) {
       return res.status(404).json({
         success: false,
@@ -538,12 +536,20 @@ const requestphysicalCard = async (req, res) => {
       });
     }
 
-    const exisitingPending = await PhysicalcardRequest.findOne({
+    // Optional hard guard if booking already marked requested
+    if (booking.physicalCardRequested) {
+      return res.status(409).json({
+        success: false,
+        message: "Physical card already requested",
+      });
+    }
+
+    const existingPending = await PhysicalcardRequest.findOne({
       bookingId,
       status: "Pending",
     });
 
-    if (exisitingPending) {
+    if (existingPending) {
       return res.status(409).json({
         success: false,
         message: "A pending physical card request already exists",
@@ -561,10 +567,17 @@ const requestphysicalCard = async (req, res) => {
       state,
     });
 
+    const updatedBooking = await MembershipBooking.findByIdAndUpdate(
+      bookingId,
+      { physicalCardRequested: true },
+      { new: true },
+    );
+
     return res.status(201).json({
       success: true,
       message: "Physical card request submitted",
       data: cardRequest,
+      booking: updatedBooking,
     });
   } catch (error) {
     return res.status(500).json({
