@@ -14,6 +14,7 @@ const User = require("../models/User.model");
 const { default: axios } = require("axios");
 const jwt = require("jsonwebtoken");
 const Otp = require("../models/Otp.model");
+const Cloudinary = require("cloudinary");
 
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -97,7 +98,7 @@ const sendOTP = async (req, res) => {
     await Otp.findOneAndUpdate(
       { phone: cleanPhone },
       { otp, otpExpiry },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
 
     return res.json({
@@ -272,6 +273,65 @@ const saveFcmToken = async (req, res) => {
   }
 };
 
+const uploadProfilePhoto = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authorized" });
+    }
+
+    if (!req.files?.profilePhoto?.[0]) {
+      return res.status(400).json({
+        success: false,
+        message: "Please upload profile photo",
+      });
+    }
+
+    const uploadResult = await Cloudinary.v2.uploader.upload(
+      req.files.profilePhoto[0].path,
+      {
+        folder: "users/profile-photo",
+      },
+    );
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        profileImage: uploadResult.secure_url,
+      },
+      { returnDocument: "after" },
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile photo uploaded successfully",
+      user: {
+        ...user.toObject(),
+        profilePhoto: {
+          public_id: uploadResult.public_id,
+          url: uploadResult.secure_url,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Upload Profile Photo Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to upload profile photo",
+    });
+  }
+};
+
 const logoutUser = async (req, res) => {
   try {
     return res.status(200).json({
@@ -293,4 +353,5 @@ module.exports = {
   completeUserProfile,
   logoutUser,
   saveFcmToken,
+  uploadProfilePhoto,
 };
