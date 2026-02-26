@@ -22,6 +22,7 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
   try {
     const {
       membershipPlanId,
+      paymentMethod = "online",
       razorpay_orderId,
       razorpay_paymentId,
       razorpay_signature,
@@ -30,30 +31,41 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
 
     const userId = req.user._id;
 
-    if (
-      !membershipPlanId ||
-      !razorpay_orderId ||
-      !razorpay_paymentId ||
-      !razorpay_signature ||
-      !memberDetails
-    ) {
+    if (!membershipPlanId || !memberDetails) {
       return res.status(400).json({
         success: false,
-        message: "Missing payment or membership details",
+        message: "Missing membership details",
       });
     }
 
-    const body = razorpay_orderId + "|" + razorpay_paymentId;
+    if (!["online", "cash"].includes(paymentMethod)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment method",
+      });
+    }
 
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(razorpay_orderId + "|" + razorpay_paymentId)
-      .digest("hex");
+    if (
+      paymentMethod === "online" &&
+      (!razorpay_orderId || !razorpay_paymentId || !razorpay_signature)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing online payment details",
+      });
+    }
 
-    if (expectedSignature !== razorpay_signature) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid Payment Signature" });
+    if (paymentMethod === "online") {
+      const expectedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .update(razorpay_orderId + "|" + razorpay_paymentId)
+        .digest("hex");
+
+      if (expectedSignature !== razorpay_signature) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid Payment Signature" });
+      }
     }
 
     const existingActive = await MembershipBooking.findOne({
@@ -85,10 +97,12 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       memberDetails,
       startDate,
       endDate,
-      razorpay_orderId,
-      razorpay_paymentId,
-      razorpay_signature,
-      paymentStatus: "Completed",
+      paymentMethod,
+      razorpay_orderId: paymentMethod === "online" ? razorpay_orderId : null,
+      razorpay_paymentId:
+        paymentMethod === "online" ? razorpay_paymentId : null,
+      razorpay_signature: paymentMethod === "online" ? razorpay_signature : null,
+      paymentStatus: paymentMethod === "online" ? "Completed" : "Pending",
       status: "Active",
 
       arrivalDate: null,
@@ -99,29 +113,42 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       qrcodeURL: qrCodeUrl,
     });
 
-    await createNotification({
-      userId: userId,
-      title: "Membership Activated",
-      message: `Your membership is active till ${endDate.toDateString()}`,
-      type: "booking",
-    });
+    if (paymentMethod === "online") {
+      await createNotification({
+        userId: userId,
+        title: "Membership Activated",
+        message: `Your membership is active till ${endDate.toDateString()}`,
+        type: "booking",
+      });
 
-    const user = await User.findById(userId);
-    const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
+      const user = await User.findById(userId);
+      const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
 
-    if (user?.fcmToken) {
-      await admin.messaging().send({
-        token: user.fcmToken,
-        notification: {
-          title: `Congratulations ${firstName}`,
-          body: `Membership Activated. Your membership is active till ${endDate.toDateString()}`,
-        },
+      if (user?.fcmToken) {
+        await admin.messaging().send({
+          token: user.fcmToken,
+          notification: {
+            title: `Congratulations ${firstName}`,
+            body: `Membership Activated. Your membership is active till ${endDate.toDateString()}`,
+          },
+        });
+      }
+    } else {
+      await createNotification({
+        userId: userId,
+        title: "Cash Payment Pending",
+        message:
+          "Your membership request is created. Please complete cash payment to activate benefits.",
+        type: "booking",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Membership booking created successfully",
+      message:
+        paymentMethod === "online"
+          ? "Membership booking created successfully"
+          : "Cash booking created. Payment verification is pending",
       booking: newbooking,
     });
   } catch (error) {
@@ -246,6 +273,7 @@ const requestUserArrival = async (req, res) => {
       _id: bookingId,
       userId,
       status: "Active",
+      paymentStatus: "Completed",
     });
 
     if (!existing) {
@@ -419,6 +447,7 @@ const cancelUserArrivalRequest = async (req, res) => {
       _id: bookingId,
       userId,
       status: "Active",
+      paymentStatus: "Completed",
     });
 
     if (!booking) {
@@ -462,6 +491,7 @@ const getActiveMembership = async (req, res) => {
     const booking = await MembershipBooking.findOne({
       userId,
       status: "Active",
+      paymentStatus: "Completed",
     }).lean();
 
     if (!booking) {
@@ -528,11 +558,16 @@ const requestphysicalCard = async (req, res) => {
       });
     }
 
-    const booking = await MembershipBooking.findOne({ _id: bookingId, userId });
+    const booking = await MembershipBooking.findOne({
+      _id: bookingId,
+      userId,
+      status: "Active",
+      paymentStatus: "Completed",
+    });
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: "Membership booking not found",
+        message: "Active paid membership booking not found",
       });
     }
 
@@ -588,6 +623,59 @@ const requestphysicalCard = async (req, res) => {
   }
 };
 
+const updateBookingPaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentStatus } = req.body;
+
+    if (!["Pending", "Completed", "Failed"].includes(paymentStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment status",
+      });
+    }
+
+    const booking = await MembershipBooking.findById(id);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Membership booking not found",
+      });
+    }
+
+    booking.paymentStatus = paymentStatus;
+    if (paymentStatus === "Completed") {
+      booking.status = "Active";
+      booking.paymentDate = new Date();
+    } else if (paymentStatus === "Failed") {
+      booking.status = "Cancelled";
+    }
+
+    await booking.save();
+
+    if (paymentStatus === "Completed") {
+      await createNotification({
+        userId: booking.userId,
+        title: "Membership Activated",
+        message: `Your membership is active till ${booking.endDate.toDateString()}`,
+        type: "booking",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment status updated successfully",
+      booking,
+    });
+  } catch (error) {
+    console.error("updateBookingPaymentStatus error", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 module.exports = {
   VerifyPaymentandCreateBooking,
   getbookedMembershipDetail,
@@ -598,4 +686,5 @@ module.exports = {
   getActiveMembership,
   cancelUserArrivalRequest,
   requestphysicalCard,
+  updateBookingPaymentStatus,
 };

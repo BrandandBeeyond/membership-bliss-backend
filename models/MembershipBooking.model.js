@@ -61,17 +61,28 @@ const membershipBookingSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  paymentMethod: {
+    type: String,
+    enum: ["online", "cash"],
+    default: "online",
+  },
   razorpay_orderId: {
     type: String,
-    required: true,
+    required: function () {
+      return this.paymentMethod === "online";
+    },
   },
   razorpay_paymentId: {
     type: String,
-    required: true,
+    required: function () {
+      return this.paymentMethod === "online";
+    },
   },
   razorpay_signature: {
     type: String,
-    required: true,
+    required: function () {
+      return this.paymentMethod === "online";
+    },
   },
   paymentDate: {
     type: Date,

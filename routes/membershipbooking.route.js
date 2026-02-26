@@ -8,6 +8,7 @@ const {
   getActiveMembership,
   cancelUserArrivalRequest,
   requestphysicalCard,
+  updateBookingPaymentStatus,
 } = require("../controllers/membershipbooking.controller");
 
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
@@ -41,6 +42,12 @@ membershipbookingRouter.put(
   ProtectedAdmin,
   AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
   updateArrivalStatus,
+);
+membershipbookingRouter.put(
+  "/membership/:id/payment-status",
+  ProtectedAdmin,
+  AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
+  updateBookingPaymentStatus,
 );
 
 module.exports = { membershipbookingRouter };
