@@ -9,6 +9,7 @@ const {
   cancelUserArrivalRequest,
   requestphysicalCard,
   updateBookingPaymentStatus,
+  completeOnlinePaymentReplacingCash,
 } = require("../controllers/membershipbooking.controller");
 
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
@@ -20,6 +21,11 @@ membershipbookingRouter.post(
   "/booking/create",
   isAuth,
   VerifyPaymentandCreateBooking,
+);
+membershipbookingRouter.post(
+  "/booking/complete-online-payment",
+  isAuth,
+  completeOnlinePaymentReplacingCash,
 );
 
 membershipbookingRouter.get("/booking/my", isAuth, getbookedMembershipDetail);
