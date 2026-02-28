@@ -221,19 +221,68 @@ const createOfflineBookingByAdmin = async (req, res) => {
       membershipPlanId,
       membershipNumber,
       memberDetails = {},
+      fullname,
+      email,
+      phone,
       arrivalDate = null,
       arrivalStatus = "Approved",
       paymentStatus = "Completed",
     } = req.body;
 
-    if (!userId || !membershipPlanId) {
+    if (!membershipPlanId) {
       return res.status(400).json({
         success: false,
-        message: "userId and membershipPlanId are required",
+        message: "membershipPlanId is required",
       });
     }
 
-    const user = await User.findById(userId);
+    let user = null;
+    if (userId) {
+      user = await User.findById(userId);
+    } else {
+      const normalizedPhone = String(
+        phone || memberDetails.phone || "",
+      ).replace(/\D/g, "");
+      if (!normalizedPhone || normalizedPhone.length < 10) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid phone number is required",
+        });
+      }
+
+      user = await User.findOne({ phone: normalizedPhone });
+      if (!user) {
+        const safeFullname =
+          fullname ||
+          memberDetails.fullname ||
+          `Offline User ${normalizedPhone.slice(-4)}`;
+        const safeEmail = (email || memberDetails.email || undefined)
+          ?.trim()
+          ?.toLowerCase();
+
+        if (safeEmail) {
+          const existingEmailUser = await User.findOne({ email: safeEmail });
+          if (existingEmailUser) {
+            return res.status(409).json({
+              success: false,
+              message: "User already exists with this email",
+              user: existingEmailUser,
+            });
+          }
+        }
+
+        user = await User.create({
+          fullname: safeFullname.trim(),
+          email: safeEmail,
+          phone: normalizedPhone,
+          loginType: "otp",
+          city: memberDetails.city || "Offline",
+          state: memberDetails.state || "Offline",
+          profileCompleted: true,
+        });
+      }
+    }
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -250,7 +299,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
     }
 
     const existingActive = await MembershipBooking.findOne({
-      userId,
+      userId: user._id,
       status: "Active",
       paymentStatus: "Completed",
       endDate: { $gte: new Date() },
@@ -297,7 +346,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
       : "Completed";
 
     const bookingPayload = {
-      userId,
+      userId: user._id,
       membershipPlanId,
       memberDetails: {
         fullname: memberDetails.fullname || user.fullname || "Member",
@@ -313,7 +362,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
       endDate,
       paymentMethod: "cash",
       paymentStatus: safePaymentStatus,
-      status: safePaymentStatus === "Completed" ? "Active" : "Cancelled",
+      status: safePaymentStatus === "Failed" ? "Cancelled" : "Active",
       arrivalDate:
         safeArrivalStatus === "Approved"
           ? normalizedArrivalDate || new Date()
@@ -350,7 +399,7 @@ const getbookedMembershipDetail = async (req, res) => {
     const userId = req.user._id;
 
     const booking = await MembershipBooking.findOne({
-      userId,
+      userId: user._id,
       status: "Active",
       paymentStatus: "Completed",
       endDate: { $gte: new Date() },
