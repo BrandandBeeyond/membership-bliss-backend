@@ -9,6 +9,7 @@ const admin = require("firebase-admin");
 
 const User = require("../models/User.model");
 const PhysicalcardRequest = require("../models/PhysicalcardRequest.model");
+const MembershipPlan = require("../models/MembershipPlan.model");
 
 if (!admin.apps.length) {
   const ServiceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -154,7 +155,8 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       razorpay_orderId: paymentMethod === "online" ? razorpay_orderId : null,
       razorpay_paymentId:
         paymentMethod === "online" ? razorpay_paymentId : null,
-      razorpay_signature: paymentMethod === "online" ? razorpay_signature : null,
+      razorpay_signature:
+        paymentMethod === "online" ? razorpay_signature : null,
       paymentStatus: paymentMethod === "online" ? "Completed" : "Pending",
       status: "Active",
 
@@ -209,6 +211,137 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       .status(500)
       .json({ message: "Internal Server error", error: error.message });
     console.error("Membership booking creation failed", error);
+  }
+};
+
+const createOfflineBookingByAdmin = async (req, res) => {
+  try {
+    const {
+      userId,
+      membershipPlanId,
+      membershipNumber,
+      memberDetails = {},
+      arrivalDate = null,
+      arrivalStatus = "Approved",
+      paymentStatus = "Completed",
+    } = req.body;
+
+    if (!userId || !membershipPlanId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId and membershipPlanId are required",
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const plan = await MembershipPlan.findById(membershipPlanId);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Membership plan not found",
+      });
+    }
+
+    const existingActive = await MembershipBooking.findOne({
+      userId,
+      status: "Active",
+      paymentStatus: "Completed",
+      endDate: { $gte: new Date() },
+    });
+
+    if (existingActive) {
+      return res.status(409).json({
+        success: false,
+        message: "User already has an active membership",
+        booking: existingActive,
+      });
+    }
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    const validityDays = Number(plan.validityinDays) || 365;
+    endDate.setDate(endDate.getDate() + validityDays);
+
+    const qrTrackingToken = uuidv4();
+    const qrVerificationURL = `${APP_BASE_URL}/bookings/qr/verify/${qrTrackingToken}`;
+    const qrCodeUrl = await Qrcode.toDataURL(qrVerificationURL);
+
+    const normalizedArrivalDate = arrivalDate ? new Date(arrivalDate) : null;
+    if (arrivalDate && Number.isNaN(normalizedArrivalDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid arrival date",
+      });
+    }
+
+    const allowedArrivalStatuses = [
+      "Pending",
+      "Approved",
+      "Rejected",
+      "NotRequested",
+    ];
+    const safeArrivalStatus = allowedArrivalStatuses.includes(arrivalStatus)
+      ? arrivalStatus
+      : "Approved";
+
+    const allowedPaymentStatuses = ["Pending", "Completed", "Failed"];
+    const safePaymentStatus = allowedPaymentStatuses.includes(paymentStatus)
+      ? paymentStatus
+      : "Completed";
+
+    const bookingPayload = {
+      userId,
+      membershipPlanId,
+      memberDetails: {
+        fullname: memberDetails.fullname || user.fullname || "Member",
+        email: memberDetails.email || user.email || "",
+        phone: memberDetails.phone || user.phone || "",
+        dob: memberDetails.dob || null,
+        gender: memberDetails.gender || "",
+        state: memberDetails.state || user.state || "",
+        city: memberDetails.city || user.city || "",
+        address: memberDetails.address || "",
+      },
+      startDate,
+      endDate,
+      paymentMethod: "cash",
+      paymentStatus: safePaymentStatus,
+      status: safePaymentStatus === "Completed" ? "Active" : "Cancelled",
+      arrivalDate:
+        safeArrivalStatus === "Approved"
+          ? normalizedArrivalDate || new Date()
+          : normalizedArrivalDate,
+      arrivalStatus: safeArrivalStatus,
+      physicalCardRequested: false,
+      physicalCardIssued: false,
+      qrTrackingToken,
+      qrcodeURL: qrCodeUrl,
+    };
+
+    if (membershipNumber) {
+      bookingPayload.membershipNumber = membershipNumber;
+    }
+
+    const booking = await MembershipBooking.create(bookingPayload);
+
+    return res.status(201).json({
+      success: true,
+      message: "Offline booking created successfully",
+      booking,
+    });
+  } catch (error) {
+    console.error("createOfflineBookingByAdmin error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create offline booking",
+    });
   }
 };
 
@@ -678,11 +811,20 @@ const requestphysicalCard = async (req, res) => {
 
 const completeOnlinePaymentReplacingCash = async (req, res) => {
   try {
-    const { bookingId, razorpay_orderId, razorpay_paymentId, razorpay_signature } =
-      req.body;
+    const {
+      bookingId,
+      razorpay_orderId,
+      razorpay_paymentId,
+      razorpay_signature,
+    } = req.body;
     const userId = req.user._id;
 
-    if (!bookingId || !razorpay_orderId || !razorpay_paymentId || !razorpay_signature) {
+    if (
+      !bookingId ||
+      !razorpay_orderId ||
+      !razorpay_paymentId ||
+      !razorpay_signature
+    ) {
       return res.status(400).json({
         success: false,
         message: "Missing online payment details",
@@ -838,4 +980,5 @@ module.exports = {
   requestphysicalCard,
   updateBookingPaymentStatus,
   completeOnlinePaymentReplacingCash,
+  createOfflineBookingByAdmin,
 };

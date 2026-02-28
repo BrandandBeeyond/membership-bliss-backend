@@ -10,6 +10,7 @@ const {
   requestphysicalCard,
   updateBookingPaymentStatus,
   completeOnlinePaymentReplacingCash,
+  createOfflineBookingByAdmin,
 } = require("../controllers/membershipbooking.controller");
 
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
@@ -26,6 +27,12 @@ membershipbookingRouter.post(
   "/booking/complete-online-payment",
   isAuth,
   completeOnlinePaymentReplacingCash,
+);
+membershipbookingRouter.post(
+  "/booking/offline/create",
+  ProtectedAdmin,
+  AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
+  createOfflineBookingByAdmin,
 );
 
 membershipbookingRouter.get("/booking/my", isAuth, getbookedMembershipDetail);
