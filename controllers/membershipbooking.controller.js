@@ -399,7 +399,7 @@ const getbookedMembershipDetail = async (req, res) => {
     const userId = req.user._id;
 
     const booking = await MembershipBooking.findOne({
-      userId: user._id,
+      userId,
       status: "Active",
       paymentStatus: "Completed",
       endDate: { $gte: new Date() },
