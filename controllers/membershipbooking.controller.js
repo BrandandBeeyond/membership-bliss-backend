@@ -226,7 +226,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
       email,
       phone,
       arrivalDate = null,
-      arrivalStatus = "Approved",
+      arrivalStatus = "NotRequested",
       paymentStatus = "Completed",
     } = req.body;
 
@@ -339,7 +339,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
     ];
     const safeArrivalStatus = allowedArrivalStatuses.includes(arrivalStatus)
       ? arrivalStatus
-      : "Approved";
+      : "NotRequested";
 
     const allowedPaymentStatuses = ["Pending", "Completed", "Failed"];
     const safePaymentStatus = allowedPaymentStatuses.includes(paymentStatus)
@@ -367,7 +367,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
       arrivalDate:
         safeArrivalStatus === "Approved"
           ? normalizedArrivalDate || new Date()
-          : normalizedArrivalDate,
+          : null,
       arrivalStatus: safeArrivalStatus,
       physicalCardRequested: false,
       physicalCardIssued: false,
@@ -439,7 +439,9 @@ const claimMembershipByOtp = async (req, res) => {
       });
     }
 
-    let normalizedMembershipNumber = String(membershipNumber).trim().toUpperCase();
+    let normalizedMembershipNumber = String(membershipNumber)
+      .trim()
+      .toUpperCase();
     if (!normalizedMembershipNumber.startsWith("TWB-")) {
       normalizedMembershipNumber = `TWB-${normalizedMembershipNumber.replace(/^TWB-?/i, "")}`;
     }
@@ -475,12 +477,20 @@ const claimMembershipByOtp = async (req, res) => {
 
     const bookingUserId = booking.userId?.toString?.();
     const currentUserId = userId?.toString?.();
-    const bookingPhone = String(booking?.memberDetails?.phone || "").replace(/\D/g, "");
+    const bookingPhone = String(booking?.memberDetails?.phone || "").replace(
+      /\D/g,
+      "",
+    );
 
-    if (bookingUserId && bookingUserId !== currentUserId && bookingPhone !== normalizedPhone) {
+    if (
+      bookingUserId &&
+      bookingUserId !== currentUserId &&
+      bookingPhone !== normalizedPhone
+    ) {
       return res.status(403).json({
         success: false,
-        message: "This membership does not belong to your registered mobile number",
+        message:
+          "This membership does not belong to your registered mobile number",
       });
     }
 
