@@ -11,6 +11,7 @@ const {
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET,
 } = require("./utils/config");
+const path = require("path");
 const connectTodb = require("./dbConnection");
 const userRouter = require("./routes/user.route");
 const {
