@@ -47,6 +47,10 @@ app.get("/privacy-policy", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "privacy-policy.html"));
 });
 
+app.get("/delete-account", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "delete-account.html"));
+});
+
 app.get("/", (req, res) => {
   res.send(`<center><h1>Server is Started...</h1></center>`);
 });
