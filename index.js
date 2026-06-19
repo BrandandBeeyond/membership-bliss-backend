@@ -42,6 +42,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieparser());
 app.use(cors());
 
+app.get("/privacy-policy", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "privacy-policy.html"));
+});
+
 app.get("/", (req, res) => {
   res.send(`<center><h1>Server is Started...</h1></center>`);
 });
