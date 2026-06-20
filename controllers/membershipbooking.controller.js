@@ -159,6 +159,7 @@ const VerifyPaymentandCreateBooking = async (req, res) => {
       razorpay_signature:
         paymentMethod === "online" ? razorpay_signature : null,
       paymentStatus: paymentMethod === "online" ? "Completed" : "Pending",
+      claimStatus: "Claimed",
       status: "Active",
 
       arrivalDate: null,
@@ -363,6 +364,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
       endDate,
       paymentMethod: "cash",
       paymentStatus: safePaymentStatus,
+      claimStatus: "Pending",
       status: safePaymentStatus === "Failed" ? "Cancelled" : "Active",
       arrivalDate:
         safeArrivalStatus === "Approved"
@@ -450,13 +452,30 @@ const claimMembershipByOtp = async (req, res) => {
       membershipNumber: normalizedMembershipNumber,
       status: "Active",
       paymentStatus: "Completed",
+      claimStatus: "Pending",
       endDate: { $gte: new Date() },
     }).populate("membershipPlanId");
 
     if (!booking) {
+      const alreadyClaimedBooking = await MembershipBooking.findOne({
+        membershipNumber: normalizedMembershipNumber,
+        status: "Active",
+        paymentStatus: "Completed",
+        claimStatus: "Claimed",
+        endDate: { $gte: new Date() },
+      });
+
+      if (alreadyClaimedBooking) {
+        return res.status(200).json({
+          success: true,
+          message: "Membership is already claimed",
+          booking: alreadyClaimedBooking,
+        });
+      }
+
       return res.status(404).json({
         success: false,
-        message: "No active membership found with this membership number",
+        message: "No claimable membership found with this membership number",
       });
     }
 
@@ -501,6 +520,7 @@ const claimMembershipByOtp = async (req, res) => {
       email: booking.memberDetails?.email || user.email || "",
       phone: normalizedPhone,
     };
+    booking.claimStatus = "Claimed";
 
     await booking.save();
     await Otp.deleteOne({ phone: normalizedPhone });
@@ -527,6 +547,7 @@ const getbookedMembershipDetail = async (req, res) => {
       userId,
       status: "Active",
       paymentStatus: "Completed",
+      claimStatus: { $ne: "Pending" },
       endDate: { $gte: new Date() },
     })
       .populate("membershipPlanId")
@@ -634,6 +655,7 @@ const requestUserArrival = async (req, res) => {
       userId,
       status: "Active",
       paymentStatus: "Completed",
+      claimStatus: { $ne: "Pending" },
     });
 
     if (!existing) {
@@ -808,6 +830,7 @@ const cancelUserArrivalRequest = async (req, res) => {
       userId,
       status: "Active",
       paymentStatus: "Completed",
+      claimStatus: { $ne: "Pending" },
     });
 
     if (!booking) {
@@ -852,6 +875,7 @@ const getActiveMembership = async (req, res) => {
       userId,
       status: "Active",
       paymentStatus: "Completed",
+      claimStatus: { $ne: "Pending" },
     }).lean();
 
     if (!booking) {
@@ -923,6 +947,7 @@ const requestphysicalCard = async (req, res) => {
       userId,
       status: "Active",
       paymentStatus: "Completed",
+      claimStatus: { $ne: "Pending" },
     });
     if (!booking) {
       return res.status(404).json({

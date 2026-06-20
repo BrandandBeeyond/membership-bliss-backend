@@ -94,6 +94,12 @@ const membershipBookingSchema = new mongoose.Schema({
     default: "Pending",
   },
 
+  claimStatus: {
+    type: String,
+    enum: ["Pending", "Claimed"],
+    default: "Claimed",
+  },
+
   status: {
     type: String,
     enum: ["Active", "Expired", "Cancelled"],
