@@ -1,5 +1,4 @@
 const Admin = require("../models/Admin.model");
-const bcrypt = require("bcryptjs");
 
 const jwt = require("jsonwebtoken");
 
@@ -19,16 +18,12 @@ const generateToken = (admin) => {
 };
 const CreateAdmin = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password) {
       return res
         .status(400)
         .json({ success: false, message: "all fields are required" });
-    }
-
-    if (!["ADMIN", "COUNTER_STAFF"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
     }
 
     const exists = await Admin.findOne({ email });
@@ -38,13 +33,12 @@ const CreateAdmin = async (req, res) => {
         .status(409)
         .json({ success: false, message: "Admin already exists" });
     }
-    const hashedPassword = await bcrypt.hash("password", 12);
 
     const admin = await Admin.create({
       name,
       email,
-      password: hashedPassword,
-      role,
+      password,
+      role: "ADMIN",
     });
 
     return res.status(201).json({
@@ -58,7 +52,24 @@ const CreateAdmin = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Create admin error:", error);
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getAllAdmins = async (req, res) => {
+  try {
+    const admins = await Admin.find({ role: { $ne: "SUPER_ADMIN" } })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      admins,
+    });
+  } catch (error) {
+    console.error("Get admins error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -150,4 +161,10 @@ const getAdminDetails = async (req, res) => {
   }
 }
 
-module.exports = { CreateAdmin, AdminLogin, AdminLogout, getAdminDetails};
+module.exports = {
+  CreateAdmin,
+  AdminLogin,
+  AdminLogout,
+  getAdminDetails,
+  getAllAdmins,
+};
