@@ -20,6 +20,19 @@ if (!admin.apps.length) {
   });
 }
 
+const parseMoneyField = (value, fieldName) => {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized) || normalized < 0) {
+    throw new Error(`${fieldName} must be a valid non-negative number`);
+  }
+
+  return normalized;
+};
+
 const VerifyPaymentandCreateBooking = async (req, res) => {
   try {
     const {
@@ -221,13 +234,13 @@ const createOfflineBookingByAdmin = async (req, res) => {
     const {
       userId,
       membershipPlanId,
-      membershipNumber,
       memberDetails = {},
       fullname,
       email,
       phone,
-      arrivalDate = null,
-      arrivalStatus = "NotRequested",
+      paymentReceived,
+      paymentPending,
+      sellingCost,
       paymentStatus = "Completed",
     } = req.body;
 
@@ -292,6 +305,27 @@ const createOfflineBookingByAdmin = async (req, res) => {
       });
     }
 
+    let normalizedPaymentReceived;
+    let normalizedPaymentPending;
+    let normalizedSellingCost;
+
+    try {
+      normalizedPaymentReceived = parseMoneyField(
+        paymentReceived,
+        "paymentReceived",
+      );
+      normalizedPaymentPending = parseMoneyField(
+        paymentPending,
+        "paymentPending",
+      );
+      normalizedSellingCost = parseMoneyField(sellingCost, "sellingCost");
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     const plan = await MembershipPlan.findById(membershipPlanId);
     if (!plan) {
       return res.status(404).json({
@@ -324,28 +358,17 @@ const createOfflineBookingByAdmin = async (req, res) => {
     const qrVerificationURL = `${APP_BASE_URL}/bookings/qr/verify/${qrTrackingToken}`;
     const qrCodeUrl = await Qrcode.toDataURL(qrVerificationURL);
 
-    const normalizedArrivalDate = arrivalDate ? new Date(arrivalDate) : null;
-    if (arrivalDate && Number.isNaN(normalizedArrivalDate.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid arrival date",
-      });
-    }
-
-    const allowedArrivalStatuses = [
-      "Pending",
-      "Approved",
-      "Rejected",
-      "NotRequested",
-    ];
-    const safeArrivalStatus = allowedArrivalStatuses.includes(arrivalStatus)
-      ? arrivalStatus
-      : "NotRequested";
-
     const allowedPaymentStatuses = ["Pending", "Completed", "Failed"];
     const safePaymentStatus = allowedPaymentStatuses.includes(paymentStatus)
       ? paymentStatus
       : "Completed";
+
+    if (normalizedPaymentPending === null) {
+      normalizedPaymentPending = Math.max(
+        (normalizedSellingCost ?? 0) - (normalizedPaymentReceived ?? 0),
+        0,
+      );
+    }
 
     const bookingPayload = {
       userId: user._id,
@@ -360,26 +383,20 @@ const createOfflineBookingByAdmin = async (req, res) => {
         city: memberDetails.city || user.city || "",
         address: memberDetails.address || "",
       },
+      paymentReceived: normalizedPaymentReceived ?? 0,
+      paymentPending: normalizedPaymentPending ?? 0,
+      sellingCost: normalizedSellingCost ?? 0,
       startDate,
       endDate,
       paymentMethod: "cash",
       paymentStatus: safePaymentStatus,
       claimStatus: "Pending",
       status: safePaymentStatus === "Failed" ? "Cancelled" : "Active",
-      arrivalDate:
-        safeArrivalStatus === "Approved"
-          ? normalizedArrivalDate || new Date()
-          : null,
-      arrivalStatus: safeArrivalStatus,
       physicalCardRequested: false,
       physicalCardIssued: false,
       qrTrackingToken,
       qrcodeURL: qrCodeUrl,
     };
-
-    if (membershipNumber) {
-      bookingPayload.membershipNumber = membershipNumber;
-    }
 
     const booking = await MembershipBooking.create(bookingPayload);
 

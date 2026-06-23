@@ -53,6 +53,21 @@ const membershipBookingSchema = new mongoose.Schema({
     city: { type: String },
     address: { type: String },
   },
+  paymentReceived: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  paymentPending: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  sellingCost: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
   startDate: {
     type: Date,
     required: true,
