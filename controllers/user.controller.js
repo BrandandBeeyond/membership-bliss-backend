@@ -9,6 +9,8 @@ const {
   OTP_TEMPLATE,
   OTP_PE_ID,
   ANDROID_APP_SIGNATURE,
+  FAST2SMS_OTP_ID,
+  FAST2SMS_API_KEY,
 } = require("../utils/config");
 const User = require("../models/User.model");
 const { default: axios } = require("axios");
@@ -19,6 +21,9 @@ const Cloudinary = require("cloudinary");
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
+const OTP_EXPIRY_MINUTES = 10;
+
+const normalizePhone = phone => String(phone || "").replace(/\D/g, "");
 
 const googleLogin = async (req, res) => {
   try {
@@ -73,41 +78,69 @@ const sendOTP = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Phone required" });
 
-    const otp = generateOTP();
-    const otpExpiry = Date.now() + 5 * 60 * 1000;
+    const cleanPhone = normalizePhone(phone);
 
-    const msg = `Your Touchwood Bliss Membership login OTP is ${otp}. Do not share this code with anyone. Visit touchwoodbliss.com for more information.\r\n${ANDROID_APP_SIGNATURE}`;
-
-    const url = `https://kutility.org/app/smsapi/index.php?key=${OTP_API_KEY}&campaign=${OTP_CAMPAIGN}&routeid=${OTP_ROUTE}&type=text&contacts=${phone}&senderid=${OTP_SENDER}&msg=${encodeURIComponent(
-      msg,
-    )}&template_id=${OTP_TEMPLATE}&pe_id=${OTP_PE_ID}`;
-
-    const response = await axios.get(url);
-
-    if (!response?.data) {
-      return res.status(502).json({
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return res.status(400).json({
         success: false,
-        message: "SMS vendor did not return a valid response",
+        message: "Please enter a valid 10-digit Indian mobile number",
       });
     }
 
-    const normalizePhone = (phone) => phone.replace(/\D/g, "");
-
-    const cleanPhone = normalizePhone(phone);
+    const otp = String(generateOTP());
+    const otpExpiry = Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000;
 
     await Otp.findOneAndUpdate(
       { phone: cleanPhone },
-      { otp, otpExpiry },
-      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+      {
+        phone: cleanPhone,
+        otp,
+        otpExpiry,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
-    return res.json({
+    const response = await axios.post(
+      "https://www.fast2sms.com/dev/otp/send",
+      {
+        mobile: cleanPhone,
+        otp_id: FAST2SMS_OTP_ID,
+        otp,
+        otp_expiry: OTP_EXPIRY_MINUTES,
+      },
+      {
+        timeout: 15000,
+        headers: {
+          authorization: FAST2SMS_API_KEY,
+          accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    console.log("Fast2SMS Response:", response.data);
+
+    if (!response?.data?.return) {
+      await Otp.deleteOne({ phone: cleanPhone });
+      return res.status(502).json({
+        success: false,
+        message: response?.data?.message || "Failed to send OTP",
+      });
+    }
+
+    return res.status(200).json({
       success: true,
       message: "OTP sent successfully",
-      vendorResponse: response.data,
+      requestId: response.data.request_id,
     });
+  
+
   } catch (error) {
     console.error("Send OTP Error:", error.message);
+    const cleanPhone = normalizePhone(req.body?.phone);
+    if (cleanPhone) {
+      await Otp.deleteOne({ phone: cleanPhone }).catch(() => {});
+    }
     return res
       .status(500)
       .json({ success: false, message: "Failed to send OTP" });
@@ -125,7 +158,6 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    const normalizePhone = (phone) => phone.replace(/\D/g, "");
     const cleanPhone = normalizePhone(phone);
 
     const otpRecord = await Otp.findOne({ phone: cleanPhone });
@@ -137,7 +169,7 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    if (otpRecord.otp !== otp) {
+    if (String(otpRecord.otp) !== String(otp)) {
       return res.status(400).json({
         success: false,
         message: "Invalid OTP",

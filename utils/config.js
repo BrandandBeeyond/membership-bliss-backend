@@ -17,6 +17,9 @@ const OTP_SENDER = process.env.OTP_SENDER;
 const OTP_TEMPLATE = process.env.OTP_TEMPLATE;
 const OTP_PE_ID = process.env.OTP_PE_ID;
 const APP_BASE_URL = process.env.APP_BASE_URL;
+const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY;
+const FAST2SMS_OTP_ID = process.env.FAST2SMS_OTP_ID;
+
 
 const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
 const ANDROID_APP_SIGNATURE = process.env.ANDROID_APP_SIGNATURE;
@@ -42,4 +45,6 @@ module.exports = {
   APP_BASE_URL,
   SUPER_ADMIN_PASSWORD,
   ANDROID_APP_SIGNATURE,
+  FAST2SMS_API_KEY,
+  FAST2SMS_OTP_ID,
 };
