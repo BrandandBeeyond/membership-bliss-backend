@@ -12,6 +12,7 @@ const {
   completeOnlinePaymentReplacingCash,
   createOfflineBookingByAdmin,
   claimMembershipByOtp,
+  generateOfflineClaimCode,
 } = require("../controllers/membershipbooking.controller");
 
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
@@ -51,7 +52,8 @@ membershipbookingRouter.post("/request-physical-card", isAuth, requestphysicalCa
 membershipbookingRouter.get("/active", isAuth, getActiveMembership);
 
 // for admin panel
-membershipbookingRouter.get("/allbookings", getAllBookings);
+membershipbookingRouter.get("/allbookings", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN", "COUNTER_STAFF"), getAllBookings);
+membershipbookingRouter.post("/booking/offline/:id/claim-code", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), generateOfflineClaimCode);
 membershipbookingRouter.put(
   "/membership/:id/arrival",
   ProtectedAdmin,

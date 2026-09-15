@@ -11,6 +11,7 @@ const User = require("../models/User.model");
 const PhysicalcardRequest = require("../models/PhysicalcardRequest.model");
 const MembershipPlan = require("../models/MembershipPlan.model");
 const Otp = require("../models/Otp.model");
+const { generateClaimCode, hashCode, makeClaimMembership, makeGenerateOfflineClaimCode } = require("../services/offline-claim");
 
 if (!admin.apps.length) {
   const ServiceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -370,7 +371,10 @@ const createOfflineBookingByAdmin = async (req, res) => {
       );
     }
 
+    const claimCode = generateClaimCode();
     const bookingPayload = {
+      claimCodeHash: hashCode(claimCode),
+      claimCodeCreatedAt: new Date(),
       userId: user._id,
       membershipPlanId,
       memberDetails: {
@@ -404,6 +408,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
       success: true,
       message: "Offline booking created successfully",
       booking,
+      claimCode,
     });
   } catch (error) {
     console.error("createOfflineBookingByAdmin error:", error);
@@ -414,147 +419,8 @@ const createOfflineBookingByAdmin = async (req, res) => {
   }
 };
 
-const claimMembershipByOtp = async (req, res) => {
-  try {
-    const { membershipNumber, otp } = req.body;
-    const userId = req.user?._id;
-
-    if (!membershipNumber || !otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Membership number and OTP are required",
-      });
-    }
-
-    const user = await User.findById(userId);
-    if (!user?.phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Registered phone not found for current user",
-      });
-    }
-
-    const normalizedPhone = String(user.phone).replace(/\D/g, "");
-    const otpRecord = await Otp.findOne({ phone: normalizedPhone });
-
-    if (!otpRecord) {
-      return res.status(404).json({
-        success: false,
-        message: "No OTP request found for this phone number",
-      });
-    }
-
-    if (String(otpRecord.otp) !== String(otp)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP",
-      });
-    }
-
-    if (Number(otpRecord.otpExpiry) < Date.now()) {
-      return res.status(400).json({
-        success: false,
-        message: "OTP has expired",
-      });
-    }
-
-    let normalizedMembershipNumber = String(membershipNumber)
-      .trim()
-      .toUpperCase();
-    if (!normalizedMembershipNumber.startsWith("TWB-")) {
-      normalizedMembershipNumber = `TWB-${normalizedMembershipNumber.replace(/^TWB-?/i, "")}`;
-    }
-
-    const booking = await MembershipBooking.findOne({
-      membershipNumber: normalizedMembershipNumber,
-      status: "Active",
-      paymentStatus: "Completed",
-      claimStatus: "Pending",
-      endDate: { $gte: new Date() },
-    }).populate("membershipPlanId");
-
-    if (!booking) {
-      const alreadyClaimedBooking = await MembershipBooking.findOne({
-        membershipNumber: normalizedMembershipNumber,
-        status: "Active",
-        paymentStatus: "Completed",
-        claimStatus: "Claimed",
-        endDate: { $gte: new Date() },
-      });
-
-      if (alreadyClaimedBooking) {
-        return res.status(200).json({
-          success: true,
-          message: "Membership is already claimed",
-          booking: alreadyClaimedBooking,
-        });
-      }
-
-      return res.status(404).json({
-        success: false,
-        message: "No claimable membership found with this membership number",
-      });
-    }
-
-    const existingCompleted = await MembershipBooking.findOne({
-      userId,
-      _id: { $ne: booking._id },
-      status: "Active",
-      paymentStatus: "Completed",
-      endDate: { $gte: new Date() },
-    });
-
-    if (existingCompleted) {
-      return res.status(409).json({
-        success: false,
-        message: "User already has an active membership",
-      });
-    }
-
-    const bookingUserId = booking.userId?.toString?.();
-    const currentUserId = userId?.toString?.();
-    const bookingPhone = String(booking?.memberDetails?.phone || "").replace(
-      /\D/g,
-      "",
-    );
-
-    if (
-      bookingUserId &&
-      bookingUserId !== currentUserId &&
-      bookingPhone !== normalizedPhone
-    ) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "This membership does not belong to your registered mobile number",
-      });
-    }
-
-    booking.userId = userId;
-    booking.memberDetails = {
-      ...booking.memberDetails,
-      fullname: booking.memberDetails?.fullname || user.fullname || "Member",
-      email: booking.memberDetails?.email || user.email || "",
-      phone: normalizedPhone,
-    };
-    booking.claimStatus = "Claimed";
-
-    await booking.save();
-    await Otp.deleteOne({ phone: normalizedPhone });
-
-    return res.status(200).json({
-      success: true,
-      message: "Membership claimed successfully",
-      booking,
-    });
-  } catch (error) {
-    console.error("claimMembershipByOtp error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to claim membership",
-    });
-  }
-};
+const claimMembershipByOtp = makeClaimMembership({ MembershipBooking, User, Otp });
+const generateOfflineClaimCode = makeGenerateOfflineClaimCode({ MembershipBooking });
 
 const getbookedMembershipDetail = async (req, res) => {
   try {
@@ -1198,4 +1064,5 @@ module.exports = {
   completeOnlinePaymentReplacingCash,
   createOfflineBookingByAdmin,
   claimMembershipByOtp,
+  generateOfflineClaimCode,
 };

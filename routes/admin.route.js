@@ -8,6 +8,8 @@ const {
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 
 const adminRouter = require("express").Router();
+const { makeAdminManagement } = require("../controllers/admin-management.controller");
+const { updateAdmin, deleteAdmin } = makeAdminManagement(require("../models/Admin.model"));
 
 adminRouter.post("/login", AdminLogin);
 
@@ -26,6 +28,9 @@ adminRouter.get(
   AuthorizeRoles("SUPER_ADMIN"),
   getAllAdmins
 );
+
+adminRouter.put("/admins/:id", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN"), updateAdmin);
+adminRouter.delete("/admins/:id", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN"), deleteAdmin);
 
 adminRouter.post("/admin-logout", ProtectedAdmin, AdminLogout);
 module.exports = { adminRouter };

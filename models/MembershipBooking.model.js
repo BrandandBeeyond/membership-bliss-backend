@@ -43,6 +43,9 @@ const membershipBookingSchema = new mongoose.Schema({
     unique: true,
     default: () => "TWB-" + uuidv4().slice(0, 8).toUpperCase(),
   },
+  claimCodeHash: { type: String, select: false },
+  claimCodeCreatedAt: { type: Date },
+  claimedAt: { type: Date },
   memberDetails: {
     fullname: { type: String, required: true },
     email: { type: String },
@@ -159,6 +162,8 @@ const membershipBookingSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+membershipBookingSchema.set("toJSON", { transform: (_doc, result) => { delete result.claimCodeHash; return result; } });
 
 const MembershipBooking = mongoose.model(
   "MembershipBooking",
