@@ -13,6 +13,7 @@ const {
   createOfflineBookingByAdmin,
   claimMembership,
   generateOfflineClaimCode,
+  revealOfflineClaimCode,
 } = require("../controllers/membershipbooking.controller");
 
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
@@ -57,6 +58,7 @@ membershipbookingRouter.get("/active", isAuth, getActiveMembership);
 membershipbookingRouter.delete("/booking/offline/:id", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), makeDeleteOfflineBooking({ MembershipBooking }));
 membershipbookingRouter.get("/allbookings", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN", "COUNTER_STAFF"), getAllBookings);
 membershipbookingRouter.post("/booking/offline/:id/claim-code", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), generateOfflineClaimCode);
+membershipbookingRouter.get("/booking/offline/:id/claim-code", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), revealOfflineClaimCode);
 membershipbookingRouter.put(
   "/membership/:id/arrival",
   ProtectedAdmin,

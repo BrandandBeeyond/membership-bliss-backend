@@ -44,6 +44,7 @@ const membershipBookingSchema = new mongoose.Schema({
     default: () => "TWB-" + uuidv4().slice(0, 8).toUpperCase(),
   },
   claimCodeHash: { type: String, select: false },
+  claimCodeCiphertext: { type: String, select: false },
   claimCodeCreatedAt: { type: Date },
   claimedAt: { type: Date },
   memberDetails: {
