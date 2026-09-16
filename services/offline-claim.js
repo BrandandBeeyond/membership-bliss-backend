@@ -2,11 +2,11 @@ const crypto = require("crypto");
 
 const normalizeCode = (value) => typeof value === "string" ? value.trim().replace(/[\s-]/g, "").toUpperCase() : "";
 const hashCode = (code) => crypto.createHash("sha256").update(normalizeCode(code)).digest("hex");
-const generateClaimCode = () => crypto.randomBytes(6).toString("hex").toUpperCase();
+const generateClaimCode = () => crypto.randomInt(100000, 1000000).toString();
 
 function verifyClaimCode(code, hash) {
   const normalized = normalizeCode(code);
-  if (!/^[A-F0-9]{12}$/.test(normalized) || !/^[a-f0-9]{64}$/.test(hash || "")) return false;
+  if (!/^(?:\d{6}|[A-F0-9]{12})$/.test(normalized) || !/^[a-f0-9]{64}$/.test(hash || "")) return false;
   return crypto.timingSafeEqual(Buffer.from(hashCode(normalized), "hex"), Buffer.from(hash, "hex"));
 }
 
@@ -14,8 +14,8 @@ function makeClaimMembership({ MembershipBooking, User }) {
   return async (req, res) => {
     try {
       const { membershipNumber, claimCode } = req.body || {};
-      if (typeof membershipNumber !== "string" || !membershipNumber.trim() || !/^[A-F0-9]{12}$/.test(normalizeCode(claimCode))) {
-        return res.status(400).json({ success: false, message: "Membership number and 12-character claim code are required" });
+      if (typeof membershipNumber !== "string" || !membershipNumber.trim() || !/^(?:\d{6}|[A-F0-9]{12})$/.test(normalizeCode(claimCode))) {
+        return res.status(400).json({ success: false, message: "Membership number and 6-digit claim code are required" });
       }
       const userId = req.user?._id;
       const user = await User.findById(userId);

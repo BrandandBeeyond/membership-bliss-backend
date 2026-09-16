@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { generateClaimCode, hashCode, verifyClaimCode, makeClaimMembership, makeGenerateOfflineClaimCode } = require("../services/offline-claim");
 const { makeAdminManagement } = require("../controllers/admin-management.controller");
 
-const code = "A1B2C3D4E5F6";
+const code = "123456";
 const bookingId = "1234567890abcdef12345678";
 const ownerId = "111111111111111111111111";
 const userId = "222222222222222222222222";
@@ -40,10 +40,10 @@ function claimFixture(options = {}) {
 
 test("claim codes are random, correctly shaped and verified without plaintext storage", () => {
   const codes = new Set(Array.from({ length: 100 }, generateClaimCode));
-  assert.equal(codes.size, 100);
-  for (const value of codes) assert.match(value, /^[A-F0-9]{12}$/);
-  assert.equal(verifyClaimCode("a1b2-c3d4-e5f6", hashCode(code)), true);
-  assert.equal(verifyClaimCode("A1B2C3D4E5F7", hashCode(code)), false);
+  assert.ok(codes.size > 90);
+  for (const value of codes) assert.match(value, /^\d{6}$/);
+  assert.equal(verifyClaimCode("123456", hashCode(code)), true);
+  assert.equal(verifyClaimCode("123457", hashCode(code)), false);
   assert.equal(verifyClaimCode(code, undefined), false);
   assert.equal(verifyClaimCode("", hashCode(code)), false);
 });
@@ -151,4 +151,30 @@ test("duplicate admin email reports conflict", async () => {
   const res = response();
   await handlers.updateAdmin({ params: { id: bookingId }, admin: { _id: ownerId }, body: { name: "Name", email: "test@example.com" } }, res);
   assert.equal(res.statusCode, 409);
+});
+
+test("previously issued 12-character codes still verify", () => {
+  assert.equal(verifyClaimCode("a1b2-c3d4-e5f6", hashCode("A1B2C3D4E5F6")), true);
+});
+const { makeDeleteOfflineBooking } = require("../services/offline-booking-delete");
+test("offline deletion is restricted to cash bookings and returns deleted ID", async () => {
+  const handler = makeDeleteOfflineBooking({ MembershipBooking: { findOneAndDelete: async (filter) => {
+    assert.deepEqual(filter, { _id: bookingId, paymentMethod: "cash" });
+    return { _id: bookingId };
+  } } });
+  const res = response();
+  await handler({ params: { id: bookingId } }, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.bookingId, bookingId);
+});
+test("invalid, missing and online bookings cannot be deleted through offline endpoint", async () => {
+  let calls = 0;
+  const handler = makeDeleteOfflineBooking({ MembershipBooking: { findOneAndDelete: async () => { calls++; return null; } } });
+  const invalid = response();
+  await handler({ params: { id: "invalid" } }, invalid);
+  assert.equal(invalid.statusCode, 400);
+  assert.equal(calls, 0);
+  const missing = response();
+  await handler({ params: { id: bookingId } }, missing);
+  assert.equal(missing.statusCode, 404);
 });

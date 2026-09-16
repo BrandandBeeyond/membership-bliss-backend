@@ -18,6 +18,8 @@ const {
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 const { isAuth } = require("../middlewares/middleware");
 
+const { makeDeleteOfflineBooking } = require("../services/offline-booking-delete");
+const MembershipBooking = require("../models/MembershipBooking.model");
 const membershipbookingRouter = require("express").Router();
 
 membershipbookingRouter.post(
@@ -52,6 +54,7 @@ membershipbookingRouter.post("/request-physical-card", isAuth, requestphysicalCa
 membershipbookingRouter.get("/active", isAuth, getActiveMembership);
 
 // for admin panel
+membershipbookingRouter.delete("/booking/offline/:id", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), makeDeleteOfflineBooking({ MembershipBooking }));
 membershipbookingRouter.get("/allbookings", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN", "COUNTER_STAFF"), getAllBookings);
 membershipbookingRouter.post("/booking/offline/:id/claim-code", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), generateOfflineClaimCode);
 membershipbookingRouter.put(

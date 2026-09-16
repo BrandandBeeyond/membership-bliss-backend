@@ -2,7 +2,7 @@
 
 Super-admins can edit or delete ordinary admin accounts from the Admins table. Edit supports name, email, active status and an optional new password. Blank passwords preserve the existing hash. Super-admin accounts and self-deletion are protected. Deleted or inactive accounts are rejected by the existing authenticated API middleware on their next request.
 
-Offline creation now returns `{ booking, claimCode }`. The membership number remains automatic. The 12-character claim code is randomly generated, shown once to the issuing admin, and stored only as a hash. Share the number and code privately with the member. Claim codes are not included in customer responses or booking list responses.
+Offline creation now returns `{ booking, claimCode }`. The membership number remains automatic. The 6-digit claim code is randomly generated, shown once to the issuing admin, and stored only as a hash. Share the number and code privately with the member. Claim codes are not included in customer responses or booking list responses.
 
 Existing unclaimed offline bookings need a code: use **Generate code** in the Offline Bookings table. **Replace code** invalidates the previous code. Only active, unexpired, unclaimed cash bookings can have codes issued. No automatic migration or replacement of existing memberships is performed.
 
@@ -19,3 +19,5 @@ API changes:
 Deploy backend and admin together, and release the updated mobile app for claiming. Older apps do not send a claim code, so their claims are intentionally rejected. Existing already-claimed memberships continue to work. No new environment variables or dependencies are needed.
 
 Run `node --test tests/admin-and-claims.test.js`. Tests use fake models; they do not delete real admins, create bookings, send OTPs or modify live memberships.
+
+New codes contain six numeric digits. Previously issued 12-character codes remain valid. Admins can delete cash bookings via `DELETE /api/v1/bookings/booking/offline/:id`.
