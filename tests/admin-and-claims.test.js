@@ -11,12 +11,11 @@ const chain = (value) => ({ select: async () => value, populate: async () => val
 const response = () => ({ statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });
 
 function claimFixture(options = {}) {
-  const updates = [], deletions = [];
+  const updates = [];
   const booking = { _id: bookingId, userId, memberDetails: { phone: "9876543210" }, claimCodeHash: hashCode(code) };
   let claimed = false;
   const dependencies = {
     User: { findById: async () => ({ _id: userId, phone: "9876543210" }) },
-    Otp: { findOne: async () => ({ _id: "otp1", otp: "123456", otpExpiry: Date.now() + 60000, ...options.otp }), deleteOne: async (filter) => deletions.push(filter) },
     MembershipBooking: {
       findOne: (filter) => {
         if (filter.membershipNumber) {
@@ -36,7 +35,7 @@ function claimFixture(options = {}) {
       },
     },
   };
-  return { handler: makeClaimMembership(dependencies), updates, deletions, req: { user: { _id: userId }, body: { membershipNumber: "TWB-ABC12345", claimCode: code, otp: "123456" } } };
+  return { handler: makeClaimMembership(dependencies), updates, req: { user: { _id: userId }, body: { membershipNumber: "TWB-ABC12345", claimCode: code } } };
 }
 
 test("claim codes are random, correctly shaped and verified without plaintext storage", () => {
@@ -49,7 +48,7 @@ test("claim codes are random, correctly shaped and verified without plaintext st
   assert.equal(verifyClaimCode("", hashCode(code)), false);
 });
 
-test("number and OTP without claim code cannot claim membership", async () => {
+test("number without claim code cannot claim membership", async () => {
   const fixture = claimFixture();
   delete fixture.req.body.claimCode;
   const res = response();
@@ -68,16 +67,14 @@ test("wrong code, legacy missing code and unknown membership fail closed", async
   }
 });
 
-test("expired OTP and different owner prevent claims even with correct code", async () => {
-  for (const [options, expected] of [[{ otp: { otpExpiry: Date.now() - 1000 } }, 400], [{ booking: { userId: ownerId, memberDetails: { phone: "9999999999" } } }, 403]]) {
-    const fixture = claimFixture(options), res = response();
-    await fixture.handler(fixture.req, res);
-    assert.equal(res.statusCode, expected);
-    assert.equal(fixture.updates.length, 0);
-  }
+test("different owner prevents claims even with correct code", async () => {
+  const fixture = claimFixture({ booking: { userId: ownerId, memberDetails: { phone: "9999999999" } } }), res = response();
+  await fixture.handler(fixture.req, res);
+  assert.equal(res.statusCode, 403);
+  assert.equal(fixture.updates.length, 0);
 });
 
-test("correct number/code/OTP claims atomically and cannot be replayed", async () => {
+test("correct number and code claim without OTP and cannot be replayed", async () => {
   const fixture = claimFixture(), first = response(), second = response();
   await fixture.handler(fixture.req, first);
   await fixture.handler(fixture.req, second);
@@ -86,7 +83,8 @@ test("correct number/code/OTP claims atomically and cannot be replayed", async (
   assert.equal(fixture.updates[0].filter.claimCodeHash, hashCode(code));
   assert.equal(fixture.updates[0].filter.claimStatus, "Pending");
   assert.equal(fixture.updates[0].update.$unset.claimCodeHash, 1);
-  assert.equal(fixture.deletions.length, 1);
+  assert.equal(fixture.req.body.otp, undefined);
+  assert.equal(fixture.updates[0].update.$set.userId, userId);
   assert.equal(first.body.booking.claimCodeHash, undefined);
 });
 

@@ -10,21 +10,17 @@ function verifyClaimCode(code, hash) {
   return crypto.timingSafeEqual(Buffer.from(hashCode(normalized), "hex"), Buffer.from(hash, "hex"));
 }
 
-function makeClaimMembership({ MembershipBooking, User, Otp }) {
+function makeClaimMembership({ MembershipBooking, User }) {
   return async (req, res) => {
     try {
-      const { membershipNumber, claimCode, otp } = req.body || {};
-      if (typeof membershipNumber !== "string" || !membershipNumber.trim() || !/^[A-F0-9]{12}$/.test(normalizeCode(claimCode)) || !/^\d{6}$/.test(String(otp || ""))) {
-        return res.status(400).json({ success: false, message: "Membership number, 12-character claim code and 6-digit OTP are required" });
+      const { membershipNumber, claimCode } = req.body || {};
+      if (typeof membershipNumber !== "string" || !membershipNumber.trim() || !/^[A-F0-9]{12}$/.test(normalizeCode(claimCode))) {
+        return res.status(400).json({ success: false, message: "Membership number and 12-character claim code are required" });
       }
       const userId = req.user?._id;
       const user = await User.findById(userId);
       if (!user?.phone) return res.status(400).json({ success: false, message: "Registered phone not found for current user" });
       const phone = String(user.phone).replace(/\D/g, "");
-      const otpRecord = await Otp.findOne({ phone });
-      if (!otpRecord || String(otpRecord.otp) !== String(otp) || !Number.isFinite(Number(otpRecord.otpExpiry)) || Number(otpRecord.otpExpiry) < Date.now()) {
-        return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
-      }
       let number = membershipNumber.trim().toUpperCase();
       if (!number.startsWith("TWB-")) number = `TWB-${number.replace(/^TWB-?/i, "")}`;
       const eligible = { membershipNumber: number, status: "Active", paymentStatus: "Completed", claimStatus: "Pending", endDate: { $gte: new Date() } };
@@ -46,7 +42,6 @@ function makeClaimMembership({ MembershipBooking, User, Otp }) {
         { new: true, runValidators: true },
       ).populate("membershipPlanId");
       if (!claimed) return res.status(409).json({ success: false, message: "Membership was already claimed or its code changed. Please refresh and try again." });
-      await Otp.deleteOne({ _id: otpRecord._id, otp: otpRecord.otp });
       return res.status(200).json({ success: true, message: "Membership claimed successfully", booking: claimed });
     } catch (error) {
       console.error("Membership claim failed:", error.name);

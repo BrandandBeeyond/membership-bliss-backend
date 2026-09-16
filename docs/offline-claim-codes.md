@@ -6,7 +6,7 @@ Offline creation now returns `{ booking, claimCode }`. The membership number rem
 
 Existing unclaimed offline bookings need a code: use **Generate code** in the Offline Bookings table. **Replace code** invalidates the previous code. Only active, unexpired, unclaimed cash bookings can have codes issued. No automatic migration or replacement of existing memberships is performed.
 
-The updated app requires membership number, claim code and the existing mobile OTP. The backend requires all three, verifies ownership and payment/expiry status, and atomically marks the booking claimed while removing its code hash. Claimed memberships cannot be claimed again.
+The updated app requires only the membership number and claim code, with no OTP step. The backend requires both, verifies ownership and payment/expiry status, and atomically marks the booking claimed while removing its code hash. Claimed memberships cannot be claimed again.
 
 API changes:
 
@@ -14,7 +14,7 @@ API changes:
 - `DELETE /api/v1/admin/admins/:id`: super-admin only.
 - `GET /api/v1/bookings/allbookings`: now requires an admin bearer token.
 - `POST /api/v1/bookings/booking/offline/:id/claim-code`: admin/super-admin only; returns `{ membershipNumber, claimCode }`.
-- `POST /api/v1/bookings/booking/claim-membership`: signed-in member; body `{ membershipNumber, claimCode, otp }`.
+- `POST /api/v1/bookings/booking/claim-membership`: signed-in member; body `{ membershipNumber, claimCode }`.
 
 Deploy backend and admin together, and release the updated mobile app for claiming. Older apps do not send a claim code, so their claims are intentionally rejected. Existing already-claimed memberships continue to work. No new environment variables or dependencies are needed.
 

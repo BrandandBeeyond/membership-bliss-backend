@@ -11,7 +11,7 @@ const {
   updateBookingPaymentStatus,
   completeOnlinePaymentReplacingCash,
   createOfflineBookingByAdmin,
-  claimMembershipByOtp,
+  claimMembership,
   generateOfflineClaimCode,
 } = require("../controllers/membershipbooking.controller");
 
@@ -36,7 +36,7 @@ membershipbookingRouter.post(
   AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
   createOfflineBookingByAdmin,
 );
-membershipbookingRouter.post("/booking/claim-membership", isAuth, claimMembershipByOtp);
+membershipbookingRouter.post("/booking/claim-membership", isAuth, claimMembership);
 
 membershipbookingRouter.get("/booking/my", isAuth, getbookedMembershipDetail);
 membershipbookingRouter.get("/userbookings/all", isAuth, getUserBookings);

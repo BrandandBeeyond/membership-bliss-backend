@@ -10,7 +10,6 @@ const admin = require("firebase-admin");
 const User = require("../models/User.model");
 const PhysicalcardRequest = require("../models/PhysicalcardRequest.model");
 const MembershipPlan = require("../models/MembershipPlan.model");
-const Otp = require("../models/Otp.model");
 const { generateClaimCode, hashCode, makeClaimMembership, makeGenerateOfflineClaimCode } = require("../services/offline-claim");
 
 if (!admin.apps.length) {
@@ -419,7 +418,7 @@ const createOfflineBookingByAdmin = async (req, res) => {
   }
 };
 
-const claimMembershipByOtp = makeClaimMembership({ MembershipBooking, User, Otp });
+const claimMembership = makeClaimMembership({ MembershipBooking, User });
 const generateOfflineClaimCode = makeGenerateOfflineClaimCode({ MembershipBooking });
 
 const getbookedMembershipDetail = async (req, res) => {
@@ -1063,6 +1062,6 @@ module.exports = {
   updateBookingPaymentStatus,
   completeOnlinePaymentReplacingCash,
   createOfflineBookingByAdmin,
-  claimMembershipByOtp,
+  claimMembership,
   generateOfflineClaimCode,
 };
