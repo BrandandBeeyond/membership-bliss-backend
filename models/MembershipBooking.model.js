@@ -146,6 +146,12 @@ const membershipBookingSchema = new mongoose.Schema({
     enum: ["Pending", "Approved", "Rejected", "NotRequested"],
     default: "NotRequested",
   },
+  arrivalRequestedAt: { type: Date, default: null },
+  // Alternative dates the resort offers when it rejects a requested date.
+  suggestedArrivalDates: { type: [Date], default: [] },
+  arrivalAdminNote: { type: String, trim: true, default: "" },
+  arrivalReviewedAt: { type: Date, default: null },
+  arrivalReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin", default: null },
 
   physicalCardRequested: {
     type: Boolean,

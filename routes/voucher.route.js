@@ -4,6 +4,7 @@ const {
   checkVoucherPendingRedemption,
   getAllRedeemVoucherRequests,
   approveVoucherRedeemptionWithCode,
+  rejectVoucherRedemption,
 } = require("../controllers/voucher.controller");
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 
@@ -29,6 +30,13 @@ voucherRouter.post(
   ProtectedAdmin,
   AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
   approveVoucherRedeemptionWithCode
+);
+
+voucherRouter.post(
+  "/voucher/redeem/:id/reject",
+  ProtectedAdmin,
+  AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
+  rejectVoucherRedemption
 );
 
 module.exports = { voucherRouter };

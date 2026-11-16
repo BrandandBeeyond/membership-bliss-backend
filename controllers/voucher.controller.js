@@ -2,6 +2,7 @@ const createNotification = require("../config/createNotification");
 const MembershipBooking = require("../models/MembershipBooking.model");
 const OfferCategory = require("../models/Offercategory.model");
 const VoucherRedeemtion = require("../models/VoucherRedeemtion.model");
+const { makeListRedemptions, makeApproveRedemption, makeRejectRedemption } = require("../services/voucher-review");
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
 
@@ -119,10 +120,32 @@ const checkVoucherPendingRedemption = async (req, res) => {
       .lean();
 
     if (!pending) {
+      // Let the app's polling see a decision made at the counter in the last few minutes.
+      const since = new Date(Date.now() - 5 * 60 * 1000);
+      const decided = await VoucherRedeemtion.findOne({
+        membershipBookingId,
+        categoryId,
+        itemId,
+        $or: [
+          { status: "Approved", approvedAt: { $gte: since } },
+          { status: "Rejected", rejectedAt: { $gte: since } },
+        ],
+      })
+        .sort({ requestedAt: -1 })
+        .select("status quantityApproved rejectionReason")
+        .lean();
+
       return res.json({
         success: true,
-        message: "No pending redemption",
-        data: null,
+        message: decided ? `Redemption ${decided.status.toLowerCase()}` : "No pending redemption",
+        data: decided
+          ? {
+              redemptionId: decided._id,
+              status: decided.status,
+              quantityApproved: decided.quantityApproved,
+              rejectionReason: decided.rejectionReason || "",
+            }
+          : null,
       });
     }
 
@@ -145,152 +168,10 @@ const checkVoucherPendingRedemption = async (req, res) => {
   }
 };
 
-const getAllRedeemVoucherRequests = async (req, res) => {
-  try {
-    let allredeemVouchers = await VoucherRedeemtion.find().populate({
-      path: "membershipBookingId",
-      select: "userId membershipNumber membershipPlanId memberDetails",
-      populate: [
-        {
-          path: "userId",
-          select: "name email",
-        },
-        {
-          path: "membershipPlanId",
-          select: "name",
-        },
-      ],
-    });
-
-    const updatedVouchers = await Promise.all(
-      allredeemVouchers.map(async (voucher) => {
-        const offer = await OfferCategory.findOne({
-          "items._id": voucher.categoryId,
-        });
-
-        let itemName = null;
-        let offerTitle = null;
-
-        if (offer) {
-          offerTitle = offer.title;
-          const item = offer.items.find(
-            (it) => it._id.toString() === voucher.categoryId.toString(),
-          );
-          itemName = item?.name || null;
-        }
-
-        return {
-          ...voucher.toObject(),
-          offerTitle,
-          itemName,
-        };
-      }),
-    );
-
-    return res.status(200).json({
-      success: true,
-      reedemedVouchers: updatedVouchers,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-const approveVoucherRedeemptionWithCode = async (req, res) => {
-  try {
-    console.log("sending body", req.body);
-
-    const { redemptionId, adminId, otpCode, quantityApproved } = req.body;
-
-    if (!redemptionId || !adminId || !otpCode || !quantityApproved) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
-    }
-
-    const redemption = await VoucherRedeemtion.findById(redemptionId);
-
-    if (!redemption) {
-      return res.status(404).json({
-        success: false,
-        message: "Redemption not found",
-      });
-    }
-
-    if (redemption.status !== "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Redemption already processed",
-      });
-    }
-
-    if (redemption.otpCode !== otpCode) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP",
-      });
-    }
-
-    const booking = await MembershipBooking.findById(
-      redemption.membershipBookingId,
-    );
-
-    if (!booking || !booking.userId) {
-      return res.status(404).json({ message: "Membership Booking not found" });
-    }
-
-    redemption.status = "Approved";
-    redemption.quantityApproved = quantityApproved;
-    redemption.approvedAt = new Date();
-    redemption.approvedBy = adminId;
-
-    await redemption.save();
-
-    await createNotification({
-      userId: booking.userId,
-      title: "Voucher Redeemed",
-      message: `Your voucher request has been approved for ${quantityApproved} item(s).`,
-      type: "general",
-    });
-
-    await MembershipBooking.findOneAndUpdate(
-      { _id: redemption.membershipBookingId },
-      {
-        $push: {
-          usedOffers: {
-            categoryId: redemption.categoryId,
-            itemId: redemption.itemId,
-            quantityUsed: quantityApproved,
-            usedAt: new Date(),
-          },
-        },
-      },
-    );
-
-    await OfferCategory.findOneAndUpdate(
-      {
-        _id: redemption.categoryId,
-        "items._id": redemption.itemId,
-      },
-      {
-        $inc: {
-          "items.$.usedCount": quantityApproved,
-        },
-      },
-    );
-
-    return res.json({
-      success: true,
-      message: "Redemption verified successfully",
-      data: redemption,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Redemption verify error" });
-  }
-};
+// Admin list/redeem/reject live in services/voucher-review.js (unit-tested).
+const getAllRedeemVoucherRequests = makeListRedemptions({ VoucherRedeemtion, OfferCategory });
+const approveVoucherRedeemptionWithCode = makeApproveRedemption({ VoucherRedeemtion, MembershipBooking, OfferCategory, notify: createNotification });
+const rejectVoucherRedemption = makeRejectRedemption({ VoucherRedeemtion, MembershipBooking, notify: createNotification });
 
 module.exports = {
   createVoucherRedeemtion,
@@ -298,4 +179,5 @@ module.exports = {
   checkVoucherPendingRedemption,
   getAllRedeemVoucherRequests,
   approveVoucherRedeemptionWithCode,
+  rejectVoucherRedemption,
 };

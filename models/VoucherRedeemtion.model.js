@@ -40,7 +40,10 @@ const voucherRedeemtionSchema = new mongoose.Schema({
 
   requestedAt: { type: Date, default: Date.now },
   approvedAt: Date,
-  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "AdminUser" },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
+  rejectedAt: Date,
+  rejectedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
+  rejectionReason: { type: String, trim: true, default: "" },
 });
 
 const VoucherRedeemtion = mongoose.model(

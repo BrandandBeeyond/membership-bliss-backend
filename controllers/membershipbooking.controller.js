@@ -10,6 +10,7 @@ const admin = require("firebase-admin");
 const User = require("../models/User.model");
 const PhysicalcardRequest = require("../models/PhysicalcardRequest.model");
 const MembershipPlan = require("../models/MembershipPlan.model");
+const { buildArrivalReview, arrivalNotificationText } = require("../services/arrival-review");
 const { generateClaimCode, hashCode, encryptCode, makeClaimMembership, makeGenerateOfflineClaimCode, makeRevealOfflineClaimCode } = require("../services/offline-claim");
 
 if (!admin.apps.length) {
@@ -570,7 +571,17 @@ const requestUserArrival = async (req, res) => {
 
     const booking = await MembershipBooking.findOneAndUpdate(
       { _id: bookingId, userId, status: "Active" },
-      { $set: { arrivalDate: parsedDate, arrivalStatus: "Pending" } },
+      {
+        $set: {
+          arrivalDate: parsedDate,
+          arrivalStatus: "Pending",
+          arrivalRequestedAt: new Date(),
+          suggestedArrivalDates: [],
+          arrivalAdminNote: "",
+          arrivalReviewedAt: null,
+          arrivalReviewedBy: null,
+        },
+      },
       { returnDocument: "after" },
     );
 
@@ -591,55 +602,45 @@ const requestUserArrival = async (req, res) => {
 const updateArrivalStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { arrivalStatus, arrivalDate } = req.body;
+    const { arrivalStatus, arrivalDate, suggestedDates, note } = req.body || {};
 
-    console.log("ARRIVAL_STATUS_REQUEST", { id, arrivalStatus, arrivalDate });
-
-    if (!["Approved", "Rejected"].includes(arrivalStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid arrival status",
-      });
+    if (!/^[a-f0-9]{24}$/i.test(id || "")) {
+      return res.status(400).json({ success: false, message: "Invalid booking ID" });
     }
 
-    const booking = await MembershipBooking.findById(id);
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Membership booking not found",
-      });
+    const review = buildArrivalReview({ arrivalStatus, arrivalDate, suggestedDates, note, adminId: req.admin?._id });
+    if (review.error) {
+      return res.status(400).json({ success: false, message: review.error });
     }
 
-    if (booking.arrivalStatus !== "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Arrival request already processed",
-      });
-    }
-
-    const update = { arrivalStatus };
-
-    if (arrivalStatus === "Approved") {
-      const parsed = arrivalDate ? new Date(arrivalDate) : new Date();
-      if (Number.isNaN(parsed.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid arrival date",
-        });
-      }
-      update.arrivalDate = parsed;
-    }
-
-    const updatedBooking = await MembershipBooking.findByIdAndUpdate(
-      id,
-      { $set: update },
-      { returnDocument: "after" },
+    // Only a still-pending request can be reviewed; this also stops two admins
+    // approving and rejecting the same request at once.
+    const updatedBooking = await MembershipBooking.findOneAndUpdate(
+      { _id: id, arrivalStatus: "Pending" },
+      { $set: review.update },
+      { returnDocument: "after", runValidators: true },
     );
+
+    if (!updatedBooking) {
+      const exists = await MembershipBooking.exists({ _id: id });
+      return res.status(exists ? 409 : 404).json({
+        success: false,
+        message: exists ? "Arrival request already processed or cancelled" : "Membership booking not found",
+      });
+    }
 
     const user = await User.findById(updatedBooking.userId).select(
       "fullname fcmToken",
     );
     const firstName = user?.fullname?.trim().split(/\s+/)[0] || "Member";
+    const notificationText = arrivalNotificationText(updatedBooking, firstName);
+
+    await createNotification({
+      userId: updatedBooking.userId,
+      title: notificationText.title,
+      message: notificationText.body,
+      type: "general",
+    });
 
     if (!user?.fcmToken) {
       console.log("FCM_SKIP_NO_TOKEN", {
@@ -647,18 +648,10 @@ const updateArrivalStatus = async (req, res) => {
       });
     } else {
       try {
-        const isApproved = arrivalStatus === "Approved";
 
         const message = {
           token: user.fcmToken,
-          notification: {
-            title: isApproved
-              ? `Arrival Approved, ${firstName}`
-              : `Arrival Rejected, ${firstName}`,
-            body: isApproved
-              ? `Your arrival request is approved for ${updatedBooking.arrivalDate.toDateString()}`
-              : "Your arrival request was rejected. Please contact support.",
-          },
+          notification: notificationText,
           data: {
             type: "ARRIVAL_STATUS",
             bookingId: String(updatedBooking._id),
