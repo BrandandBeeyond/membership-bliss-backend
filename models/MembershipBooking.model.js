@@ -72,6 +72,14 @@ const membershipBookingSchema = new mongoose.Schema({
     default: 0,
     min: 0,
   },
+  // Offline sales details (manual entry or spreadsheet import)
+  leadSource: { type: String, trim: true, default: "" },
+  salesPerson: { type: String, trim: true, default: "" },
+  branch: { type: String, trim: true, default: "" },
+  paymentMode: { type: String, trim: true, default: "" },
+  remarks: { type: String, trim: true, default: "" },
+  isComplimentary: { type: Boolean, default: false },
+  importedAt: { type: Date },
   startDate: {
     type: Date,
     required: true,

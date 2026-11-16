@@ -242,7 +242,13 @@ const createOfflineBookingByAdmin = async (req, res) => {
       paymentPending,
       sellingCost,
       paymentStatus = "Completed",
+      leadSource,
+      salesPerson,
+      branch,
+      paymentMode,
+      remarks,
     } = req.body;
+    const textField = (value) => (typeof value === "string" ? value.trim().slice(0, 200) : "");
 
     if (!membershipPlanId) {
       return res.status(400).json({
@@ -393,6 +399,12 @@ const createOfflineBookingByAdmin = async (req, res) => {
       startDate,
       endDate,
       paymentMethod: "cash",
+      paymentMode: textField(paymentMode),
+      leadSource: textField(leadSource),
+      salesPerson: textField(salesPerson),
+      branch: textField(branch),
+      remarks: textField(remarks),
+      isComplimentary: (normalizedSellingCost ?? 0) === 0 || /complimentary/i.test(textField(remarks)),
       paymentStatus: safePaymentStatus,
       claimStatus: "Pending",
       status: safePaymentStatus === "Failed" ? "Cancelled" : "Active",

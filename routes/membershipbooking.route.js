@@ -20,6 +20,10 @@ const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 const { isAuth } = require("../middlewares/middleware");
 
 const { makeDeleteOfflineBooking } = require("../services/offline-booking-delete");
+const { makeImportOfflineBookings } = require("../services/offline-import");
+const User = require("../models/User.model");
+const MembershipPlan = require("../models/MembershipPlan.model");
+const { buildBookingQr } = require("../services/booking-qr");
 const MembershipBooking = require("../models/MembershipBooking.model");
 const membershipbookingRouter = require("express").Router();
 
@@ -38,6 +42,12 @@ membershipbookingRouter.post(
   ProtectedAdmin,
   AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
   createOfflineBookingByAdmin,
+);
+membershipbookingRouter.post(
+  "/booking/offline/import",
+  ProtectedAdmin,
+  AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
+  makeImportOfflineBookings({ MembershipBooking, User, MembershipPlan, buildQr: buildBookingQr }),
 );
 membershipbookingRouter.post("/booking/claim-membership", isAuth, claimMembership);
 

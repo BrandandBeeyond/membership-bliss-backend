@@ -2,6 +2,14 @@ const crypto = require("crypto");
 const { JWT_SECRET } = require("../utils/config");
 
 const normalizeCode = (value) => typeof value === "string" ? value.trim().replace(/[\s-]/g, "").toUpperCase() : "";
+// App numbers are "TWB-XXXXXXXX"; imported sheet numbers look like "BNC NSK 0095".
+// Members may type the latter as "bncnsk95", so canonicalise both forms.
+const normalizeMembershipNumber = (value) => {
+  const number = String(value || "").trim().toUpperCase().replace(/\s+/g, " ");
+  const legacy = number.replace(/[\s-]/g, "").match(/^BNC([A-Z]+)(\d+)$/);
+  if (legacy) return `BNC ${legacy[1]} ${legacy[2].padStart(4, "0")}`;
+  return number.startsWith("TWB-") ? number : `TWB-${number.replace(/^TWB-?/, "")}`;
+};
 const hashCode = (code) => crypto.createHash("sha256").update(normalizeCode(code)).digest("hex");
 const generateClaimCode = () => crypto.randomInt(100000, 1000000).toString();
 const encryptionKey = crypto.createHash("sha256").update(JWT_SECRET || "").digest();
@@ -25,8 +33,7 @@ function makeClaimMembership({ MembershipBooking, User }) {
       const user = await User.findById(userId);
       if (!user?.phone) return res.status(400).json({ success: false, message: "Registered phone not found for current user" });
       const phone = String(user.phone).replace(/\D/g, "");
-      let number = membershipNumber.trim().toUpperCase();
-      if (!number.startsWith("TWB-")) number = `TWB-${number.replace(/^TWB-?/i, "")}`;
+      const number = normalizeMembershipNumber(membershipNumber);
       const eligible = { membershipNumber: number, status: "Active", paymentStatus: "Completed", claimStatus: "Pending", endDate: { $gte: new Date() } };
       const booking = await MembershipBooking.findOne(eligible).select("+claimCodeHash");
       // Do not expose another member's record or whether their membership exists.
@@ -73,4 +80,4 @@ function makeGenerateOfflineClaimCode({ MembershipBooking }) {
 }
 
 function makeRevealOfflineClaimCode({ MembershipBooking }) { return async (req, res) => { if (!/^[a-f0-9]{24}$/i.test(req.params.id || "")) return res.status(400).json({ success: false, message: "Invalid booking ID" }); const booking = await MembershipBooking.findOne({ _id: req.params.id, paymentMethod: "cash", claimStatus: "Pending", status: "Active", endDate: { $gte: new Date() } }).select("+claimCodeCiphertext"); if (!booking) return res.status(404).json({ success: false, message: "Offline booking not found or not claimable" }); const claimCode = decryptCode(booking.claimCodeCiphertext); if (!claimCode) return res.status(409).json({ success: false, message: "This older code cannot be shown. Generate a replacement code." }); return res.json({ success: true, membershipNumber: booking.membershipNumber, claimCode }); }; }
-module.exports = { normalizeCode, hashCode, encryptCode, generateClaimCode, verifyClaimCode, makeClaimMembership, makeGenerateOfflineClaimCode, makeRevealOfflineClaimCode };
+module.exports = { normalizeCode, normalizeMembershipNumber, hashCode, encryptCode, generateClaimCode, verifyClaimCode, makeClaimMembership, makeGenerateOfflineClaimCode, makeRevealOfflineClaimCode };
