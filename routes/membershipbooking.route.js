@@ -24,6 +24,8 @@ const { makeImportOfflineBookings } = require("../services/offline-import");
 const User = require("../models/User.model");
 const MembershipPlan = require("../models/MembershipPlan.model");
 const { buildBookingQr } = require("../services/booking-qr");
+const { makeWebsiteBookings } = require("../services/website-bookings");
+const axios = require("axios");
 const MembershipBooking = require("../models/MembershipBooking.model");
 const membershipbookingRouter = require("express").Router();
 
@@ -66,6 +68,7 @@ membershipbookingRouter.get("/active", isAuth, getActiveMembership);
 
 // for admin panel
 membershipbookingRouter.delete("/booking/offline/:id", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), makeDeleteOfflineBooking({ MembershipBooking }));
+membershipbookingRouter.get("/website-bookings", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN", "COUNTER_STAFF"), makeWebsiteBookings({ http: axios }));
 membershipbookingRouter.get("/allbookings", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN", "COUNTER_STAFF"), getAllBookings);
 membershipbookingRouter.post("/booking/offline/:id/claim-code", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), generateOfflineClaimCode);
 membershipbookingRouter.get("/booking/offline/:id/claim-code", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), revealOfflineClaimCode);
