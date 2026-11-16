@@ -63,7 +63,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
-});
+  // Sign-in tracking for the admin Guests page.
+  lastLoginAt: {
+    type: Date,
+    default: null,
+  },
+  loginCount: {
+    type: Number,
+    default: 0,
+  },
+}, { timestamps: true });
 
 userSchema.methods.getJWTtoken = function () {
   return jwt.sign({ id: this._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });

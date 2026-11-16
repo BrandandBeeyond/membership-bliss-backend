@@ -17,6 +17,20 @@ const { default: axios } = require("axios");
 const jwt = require("jsonwebtoken");
 const Otp = require("../models/Otp.model");
 const Cloudinary = require("cloudinary");
+const AuthEvent = require("../models/AuthEvent.model");
+const {
+  makeRecordAuthEvent,
+  makeOtpRateLimit,
+  minutesText,
+} = require("../services/auth-activity");
+
+const recordAuthEvent = makeRecordAuthEvent(AuthEvent);
+const { reserveOtp, releaseOtp } = makeOtpRateLimit(AuthEvent);
+
+const markLogin = (user) => {
+  user.lastLoginAt = new Date();
+  user.loginCount = (user.loginCount || 0) + 1;
+};
 
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -46,6 +60,7 @@ const googleLogin = async (req, res) => {
     const picture = payload.picture;
 
     let user = await User.findOne({ googleId });
+    const isNew = !user;
 
     if (!user) {
       user = await User.create({
@@ -54,8 +69,21 @@ const googleLogin = async (req, res) => {
         googleId,
         loginType: "google",
         profileImage: picture,
+        lastLoginAt: new Date(),
+        loginCount: 1,
       });
+    } else {
+      markLogin(user);
+      await user.save();
     }
+
+    await recordAuthEvent(req, {
+      type: isNew ? "signup" : "login",
+      phone: user.phone || null,
+      userId: user._id,
+      method: "google",
+      detail: email || "",
+    });
 
     const token = user.getJWTtoken();
 
@@ -68,6 +96,7 @@ const googleLogin = async (req, res) => {
 };
 
 const sendOTP = async (req, res) => {
+  let reservation = null;
   try {
     const { phone } = req.body;
 
@@ -84,6 +113,17 @@ const sendOTP = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Please enter a valid 10-digit Indian mobile number",
+      });
+    }
+
+    // Max 3 OTPs per number in any 90-minute window.
+    reservation = await reserveOtp(req, cleanPhone);
+    if (!reservation.allowed) {
+      res.set("Retry-After", String(reservation.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        message: `You have requested too many OTPs. Please try again in ${minutesText(reservation.retryAfterSeconds)}.`,
+        retryAfterSeconds: reservation.retryAfterSeconds,
       });
     }
 
@@ -122,6 +162,7 @@ const sendOTP = async (req, res) => {
 
     if (!response?.data?.return) {
       await Otp.deleteOne({ phone: cleanPhone });
+      await releaseOtp(reservation.eventId, response?.data?.message || "SMS provider rejected the request");
       return res.status(502).json({
         success: false,
         message: response?.data?.message || "Failed to send OTP",
@@ -132,11 +173,11 @@ const sendOTP = async (req, res) => {
       success: true,
       message: "OTP sent successfully",
       requestId: response.data.request_id,
+      otpsRemaining: reservation.remaining,
     });
-  
-
   } catch (error) {
     console.error("Send OTP Error:", error.message);
+    if (reservation?.allowed) await releaseOtp(reservation.eventId, error.message);
     const cleanPhone = normalizePhone(req.body?.phone);
     if (cleanPhone) {
       await Otp.deleteOne({ phone: cleanPhone }).catch(() => {});
@@ -170,6 +211,7 @@ const verifyOTP = async (req, res) => {
     }
 
     if (String(otpRecord.otp) !== String(otp)) {
+      await recordAuthEvent(req, { type: "otp_invalid", phone: cleanPhone, method: "otp" });
       return res.status(400).json({
         success: false,
         message: "Invalid OTP",
@@ -177,6 +219,7 @@ const verifyOTP = async (req, res) => {
     }
 
     if (otpRecord.otpExpiry < Date.now()) {
+      await recordAuthEvent(req, { type: "otp_expired", phone: cleanPhone, method: "otp" });
       return res.status(400).json({
         success: false,
         message: "OTP has expired",
@@ -186,6 +229,7 @@ const verifyOTP = async (req, res) => {
     await Otp.deleteOne({ phone: cleanPhone });
 
     let user = await User.findOne({ phone: cleanPhone });
+    const isNew = !user;
 
     if (!user) {
       user = await User.create({
@@ -195,6 +239,8 @@ const verifyOTP = async (req, res) => {
         fullname: null,
         city: null,
         profileCompleted: false,
+        lastLoginAt: new Date(),
+        loginCount: 1,
       });
     } else {
       user.isVerified = true;
@@ -203,9 +249,17 @@ const verifyOTP = async (req, res) => {
         user.fullname?.trim() && user.email?.trim() && user.city?.trim();
 
       user.profileCompleted = Boolean(hasProfile);
+      markLogin(user);
 
       await user.save();
     }
+
+    await recordAuthEvent(req, {
+      type: isNew ? "signup" : "login",
+      phone: cleanPhone,
+      userId: user._id,
+      method: "otp",
+    });
 
     const token = user.getJWTtoken();
 
@@ -263,6 +317,12 @@ const completeUserProfile = async (req, res) => {
     user.profileCompleted = true;
 
     await user.save();
+    await recordAuthEvent(req, {
+      type: "profile_completed",
+      phone: user.phone || null,
+      userId: user._id,
+      detail: [fullname, city].filter(Boolean).join(", "),
+    });
     return res.status(200).json({
       success: true,
       message: "Profile completed successfully",
@@ -366,6 +426,19 @@ const uploadProfilePhoto = async (req, res) => {
 
 const logoutUser = async (req, res) => {
   try {
+    // Logout is public; log it only when the app sends a valid token.
+    const token = req.headers.authorization?.startsWith("Bearer")
+      ? req.headers.authorization.split(" ")[1]
+      : req.cookies?.token;
+    if (token) {
+      try {
+        const { id } = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(id).select("_id phone").lean();
+        if (user) await recordAuthEvent(req, { type: "logout", phone: user.phone || null, userId: user._id });
+      } catch {
+        // invalid/expired token: still let the app log out
+      }
+    }
     return res.status(200).json({
       success: true,
       message: "user logged out success",

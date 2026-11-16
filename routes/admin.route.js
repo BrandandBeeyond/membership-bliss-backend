@@ -33,4 +33,14 @@ adminRouter.put("/admins/:id", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN"), up
 adminRouter.delete("/admins/:id", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN"), deleteAdmin);
 
 adminRouter.post("/admin-logout", ProtectedAdmin, AdminLogout);
+
+// Guests (app users) and their sign-in / OTP activity.
+const { makeGuestsAdmin } = require("../services/auth-activity");
+const { listGuests, listAuthActivity } = makeGuestsAdmin({
+  User: require("../models/User.model"),
+  AuthEvent: require("../models/AuthEvent.model"),
+  MembershipBooking: require("../models/MembershipBooking.model"),
+});
+adminRouter.get("/guests", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN"), listGuests);
+adminRouter.get("/guests/activity", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN"), listAuthActivity);
 module.exports = { adminRouter };
