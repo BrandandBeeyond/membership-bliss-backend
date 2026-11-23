@@ -41,6 +41,6 @@ const { listGuests, listAuthActivity } = makeGuestsAdmin({
   AuthEvent: require("../models/AuthEvent.model"),
   MembershipBooking: require("../models/MembershipBooking.model"),
 });
-adminRouter.get("/guests", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN"), listGuests);
-adminRouter.get("/guests/activity", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN"), listAuthActivity);
+adminRouter.get("/guests", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), listGuests);
+adminRouter.get("/guests/activity", ProtectedAdmin, AuthorizeRoles("SUPER_ADMIN", "ADMIN"), listAuthActivity);
 module.exports = { adminRouter };
