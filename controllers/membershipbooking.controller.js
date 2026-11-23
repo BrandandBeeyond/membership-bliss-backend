@@ -510,7 +510,7 @@ const getUserBookings = async (req, res) => {
 const getAllBookings = async (req, res) => {
   try {
     const allbookings = await MembershipBooking.find()
-      .populate({ path: "userId", select: "name email" })
+      .populate({ path: "userId", select: "fullname email phone" })
       .populate({ path: "membershipPlanId", select: "name description price" })
       .sort({ createdAt: -1 });
 

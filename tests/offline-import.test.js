@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { makeImportOfflineBookings, parsePurchaseDate, normalizePhone } = require("../services/offline-import");
-const { verifyClaimCode, normalizeMembershipNumber } = require("../services/offline-claim");
+const { verifyClaimCode, normalizeMembershipNumber, membershipNumberCandidates } = require("../services/offline-claim");
 
 const planId = "6933c5b6db7b67ba20513de9";
 const response = () => ({ statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });
@@ -95,6 +95,11 @@ test("parsers and membership number normalisation", () => {
   assert.equal(normalizePhone("+91 95950 95950"), "9595095950");
   assert.equal(normalizeMembershipNumber("bncnsk95"), "BNC NSK 0095");
   assert.equal(normalizeMembershipNumber(" BNC  NSK 0126 "), "BNC NSK 0126");
-  assert.equal(normalizeMembershipNumber("abc12345"), "TWB-ABC12345");
+  assert.equal(normalizeMembershipNumber("abc12345"), "BNC-ABC12345");
+  assert.equal(normalizeMembershipNumber("bnc-abcd1234"), "BNC-ABCD1234");
+  assert.equal(normalizeMembershipNumber("twb-abc12345"), "TWB-ABC12345");
+  assert.equal(normalizeMembershipNumber("twbabc12345"), "TWB-ABC12345");
+  assert.deepEqual(membershipNumberCandidates("abc12345").sort(), ["BNC-ABC12345", "TWB-ABC12345"]);
+  assert.deepEqual(membershipNumberCandidates("bncabcd1234").sort(), ["BNC ABCD 1234", "BNC-ABCD1234"]);
   assert.equal(verifyClaimCode("12345", "x"), false);
 });

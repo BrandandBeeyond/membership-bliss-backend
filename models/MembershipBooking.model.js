@@ -41,7 +41,7 @@ const membershipBookingSchema = new mongoose.Schema({
   membershipNumber: {
     type: String,
     unique: true,
-    default: () => "TWB-" + uuidv4().slice(0, 8).toUpperCase(),
+    default: () => "BNC-" + uuidv4().slice(0, 8).toUpperCase(),
   },
   claimCodeHash: { type: String, select: false },
   claimCodeCiphertext: { type: String, select: false },

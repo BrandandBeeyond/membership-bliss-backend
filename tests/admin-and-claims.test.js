@@ -19,6 +19,7 @@ function claimFixture(options = {}) {
     MembershipBooking: {
       findOne: (filter) => {
         if (filter.membershipNumber) {
+          assert.ok(filter.membershipNumber.$in.includes("TWB-ABC12345"));
           assert.equal(filter.claimStatus, "Pending");
           assert.equal(filter.status, "Active");
           assert.equal(filter.paymentStatus, "Completed");
