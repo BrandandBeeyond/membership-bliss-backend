@@ -5,6 +5,7 @@ const {
   getAllRedeemVoucherRequests,
   approveVoucherRedeemptionWithCode,
   rejectVoucherRedemption,
+  getMemberVoucherBalance,
 } = require("../controllers/voucher.controller");
 const { ProtectedAdmin, AuthorizeRoles } = require("../middlewares/admin.auth");
 
@@ -23,6 +24,13 @@ voucherRouter.get(
   ProtectedAdmin,
   AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
   getAllRedeemVoucherRequests
+);
+
+voucherRouter.get(
+  "/member-balance",
+  ProtectedAdmin,
+  AuthorizeRoles("SUPER_ADMIN", "ADMIN"),
+  getMemberVoucherBalance
 );
 
 voucherRouter.post(

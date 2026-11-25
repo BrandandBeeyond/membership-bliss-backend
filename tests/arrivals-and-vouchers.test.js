@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { buildArrivalReview, arrivalNotificationText } = require("../services/arrival-review");
-const { makeApproveRedemption, makeRejectRedemption, makeListRedemptions } = require("../services/voucher-review");
+const { makeApproveRedemption, makeRejectRedemption, makeListRedemptions, makeMemberVoucherBalance } = require("../services/voucher-review");
 
 const now = new Date("2026-11-16T06:00:00Z");
 const response = () => ({ statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });
@@ -117,4 +117,26 @@ test("admin list resolves voucher names by category and item, hides codes, and s
   assert.equal(row.itemName, "Buffet");
   assert.equal(row.remainingQuantity, 3);
   assert.equal(row.membershipBookingId.usedOffers, undefined);
+});
+
+test("member voucher balance splits used and pending per voucher for a guest name", async () => {
+  const item2 = "ffffffffffffffffffffffff";
+  let bookingFilter;
+  const chain = (result) => { const q = { select: () => q, populate: () => q, sort: () => q, limit: () => q, lean: async () => result }; return q; };
+  const handler = makeMemberVoucherBalance({
+    MembershipBooking: { find: (filter) => { bookingFilter = filter; return chain([{ _id: ids.booking, membershipNumber: "BNC 1", memberDetails: { fullname: "Harsh Shah", phone: "97" }, membershipPlanId: { name: "Gold", offers: [ids.category] }, usedOffers: [{ categoryId: ids.category, itemId: ids.item, quantityUsed: 2, usedOn: now }], status: "Active" }]); } },
+    OfferCategory: { find: () => chain([{ _id: ids.category, title: "Rooms", type: "value", items: [{ _id: ids.item, name: "Room night", worth: 7500, inventory: 3 }, { _id: item2, name: "Half off", worth: 10000, inventory: 1 }] }]) },
+    VoucherRedeemtion: { find: () => chain([{ membershipBookingId: ids.booking, itemId: item2, quantityRequested: 1 }]) },
+  });
+  const res = response();
+  await handler({ query: { name: "sh (" } }, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(bookingFilter["memberDetails.fullname"].$regex, "sh \\(", "regex input is escaped");
+  const [room, half] = res.body.members[0].vouchers;
+  assert.deepEqual([room.usedQuantity, room.remainingQuantity], [2, 1]);
+  assert.deepEqual([half.usedQuantity, half.remainingQuantity, half.waitingQuantity], [0, 1, 1]);
+
+  const short = response();
+  await handler({ query: { name: "a" } }, short);
+  assert.equal(short.statusCode, 400);
 });

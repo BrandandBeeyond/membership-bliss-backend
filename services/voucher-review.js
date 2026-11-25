@@ -157,4 +157,86 @@ function makeRejectRedemption({ VoucherRedeemtion, MembershipBooking, notify, no
   };
 }
 
-module.exports = { makeListRedemptions, makeApproveRedemption, makeRejectRedemption, usedQuantity };
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Per-guest voucher balance for the admin "Redeemed" tab: search by guest name and get,
+// for each voucher in the member's plan, how many are used and how many are still pending.
+function makeMemberVoucherBalance({ MembershipBooking, OfferCategory, VoucherRedeemtion }) {
+  return async (req, res) => {
+    try {
+      const name = text(req.query?.name, 80);
+      if (name.length < 2) return res.status(400).json({ success: false, message: "Type at least 2 letters of the guest name" });
+
+      const bookings = await MembershipBooking.find({
+        "memberDetails.fullname": { $regex: escapeRegex(name), $options: "i" },
+        status: { $ne: "Cancelled" },
+      })
+        .select("membershipNumber membershipPlanId memberDetails.fullname memberDetails.phone usedOffers status startDate endDate")
+        .populate({ path: "membershipPlanId", select: "name offers" })
+        .sort({ "memberDetails.fullname": 1 })
+        .limit(20)
+        .lean();
+
+      const offerIds = new Set();
+      bookings.forEach((b) => {
+        (b.membershipPlanId?.offers || []).forEach((id) => offerIds.add(String(id)));
+        (b.usedOffers || []).forEach((u) => offerIds.add(String(u.categoryId)));
+      });
+      const offers = await OfferCategory.find({ _id: { $in: [...offerIds].filter(isObjectId) } }).select("title type items").lean();
+      const offersById = new Map(offers.map((offer) => [String(offer._id), offer]));
+
+      const waiting = await VoucherRedeemtion.find({ membershipBookingId: { $in: bookings.map((b) => b._id) }, status: "Pending" })
+        .select("membershipBookingId itemId quantityRequested")
+        .lean();
+
+      const members = bookings.map((booking) => {
+        const planOfferIds = (booking.membershipPlanId?.offers || []).map(String);
+        const usedOfferIds = (booking.usedOffers || []).map((u) => String(u.categoryId));
+        const vouchers = [];
+        [...new Set([...planOfferIds, ...usedOfferIds])].forEach((offerId) => {
+          const offer = offersById.get(offerId);
+          if (!offer) return;
+          const inPlan = planOfferIds.includes(offerId);
+          (offer.items || []).forEach((item) => {
+            const uses = (booking.usedOffers || []).filter((u) => String(u.itemId) === String(item._id));
+            if (!inPlan && !uses.length) return;
+            const used = uses.reduce((sum, u) => sum + Number(u.quantityUsed || 0), 0);
+            const allowance = Number(item.inventory || 0);
+            vouchers.push({
+              categoryId: offer._id,
+              itemId: item._id,
+              offerTitle: offer.title,
+              offerType: offer.type,
+              itemName: item.name,
+              itemWorth: item.worth ?? null,
+              allowance,
+              usedQuantity: used,
+              remainingQuantity: Math.max(allowance - used, 0),
+              waitingQuantity: waiting
+                .filter((w) => String(w.membershipBookingId) === String(booking._id) && String(w.itemId) === String(item._id))
+                .reduce((sum, w) => sum + Number(w.quantityRequested || 0), 0),
+              lastUsedOn: uses.reduce((latest, u) => (!latest || new Date(u.usedOn) > new Date(latest) ? u.usedOn : latest), null),
+            });
+          });
+        });
+        return {
+          _id: booking._id,
+          membershipNumber: booking.membershipNumber,
+          fullname: booking.memberDetails?.fullname || "",
+          phone: booking.memberDetails?.phone || "",
+          planName: booking.membershipPlanId?.name || null,
+          status: booking.status,
+          endDate: booking.endDate,
+          vouchers,
+        };
+      });
+
+      return res.status(200).json({ success: true, members });
+    } catch (error) {
+      console.error("Member voucher balance failed:", error?.message);
+      return res.status(500).json({ success: false, message: "Unable to load member vouchers" });
+    }
+  };
+}
+
+module.exports = { makeListRedemptions, makeApproveRedemption, makeRejectRedemption, makeMemberVoucherBalance, usedQuantity };

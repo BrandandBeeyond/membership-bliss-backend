@@ -2,7 +2,7 @@ const createNotification = require("../config/createNotification");
 const MembershipBooking = require("../models/MembershipBooking.model");
 const OfferCategory = require("../models/Offercategory.model");
 const VoucherRedeemtion = require("../models/VoucherRedeemtion.model");
-const { makeListRedemptions, makeApproveRedemption, makeRejectRedemption } = require("../services/voucher-review");
+const { makeListRedemptions, makeApproveRedemption, makeRejectRedemption, makeMemberVoucherBalance } = require("../services/voucher-review");
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
 
@@ -172,6 +172,7 @@ const checkVoucherPendingRedemption = async (req, res) => {
 const getAllRedeemVoucherRequests = makeListRedemptions({ VoucherRedeemtion, OfferCategory });
 const approveVoucherRedeemptionWithCode = makeApproveRedemption({ VoucherRedeemtion, MembershipBooking, OfferCategory, notify: createNotification });
 const rejectVoucherRedemption = makeRejectRedemption({ VoucherRedeemtion, MembershipBooking, notify: createNotification });
+const getMemberVoucherBalance = makeMemberVoucherBalance({ MembershipBooking, OfferCategory, VoucherRedeemtion });
 
 module.exports = {
   createVoucherRedeemtion,
@@ -180,4 +181,5 @@ module.exports = {
   getAllRedeemVoucherRequests,
   approveVoucherRedeemptionWithCode,
   rejectVoucherRedemption,
+  getMemberVoucherBalance,
 };
