@@ -26,7 +26,7 @@ const voucherRedeemtionSchema = new mongoose.Schema({
   },
   verificationMethod: {
     type: String,
-    enum: ["OTP", "QR", "CODE"],
+    enum: ["OTP", "QR", "CODE", "MANUAL"],
     default: "OTP",
   },
   otpCode: String,
@@ -44,6 +44,7 @@ const voucherRedeemtionSchema = new mongoose.Schema({
   rejectedAt: Date,
   rejectedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
   rejectionReason: { type: String, trim: true, default: "" },
+  note: { type: String, trim: true, default: "" },
 });
 
 const VoucherRedeemtion = mongoose.model(

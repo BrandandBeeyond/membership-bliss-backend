@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { buildArrivalReview, arrivalNotificationText } = require("../services/arrival-review");
-const { makeApproveRedemption, makeRejectRedemption, makeListRedemptions, makeMemberVoucherBalance } = require("../services/voucher-review");
+const { makeApproveRedemption, makeRejectRedemption, makeListRedemptions, makeMemberVoucherBalance, makeManualRedeem } = require("../services/voucher-review");
 
 const now = new Date("2026-11-16T06:00:00Z");
 const response = () => ({ statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });
@@ -139,4 +139,42 @@ test("member voucher balance splits used and pending per voucher for a guest nam
   const short = response();
   await handler({ query: { name: "a" } }, short);
   assert.equal(short.statusCode, 400);
+});
+
+test("manual redeem records each voucher as approved, pushes usage and refuses over-allowance", async () => {
+  const fixture = (used = 0) => {
+    const calls = { created: [], pushes: [], notes: [] };
+    const booking = { _id: ids.booking, userId: ids.user, status: "Active", membershipPlanId: { offers: [ids.category] }, usedOffers: used ? [{ itemId: ids.item, quantityUsed: used }] : [] };
+    const deps = {
+      now: () => now,
+      notify: async (n) => calls.notes.push(n),
+      VoucherRedeemtion: { create: async (doc) => { calls.created.push(doc); return { _id: "r" + calls.created.length, ...doc }; } },
+      MembershipBooking: { findById: () => ({ populate: async () => booking }), updateOne: async (_f, update) => calls.pushes.push(update.$push.usedOffers) },
+      OfferCategory: { find: () => ({ select: () => ({ lean: async () => [{ _id: ids.category, title: "Outings", items: [{ _id: ids.item, name: "Half Day Outing", inventory: 10 }] }] }) }) },
+    };
+    return { deps, calls };
+  };
+  const body = (items) => ({ admin: { _id: "admin1" }, body: { membershipBookingId: ids.booking, items } });
+
+  const ok = fixture();
+  const res = response();
+  await makeManualRedeem(ok.deps)(body([{ categoryId: ids.category, itemId: ids.item, quantity: 5 }, { categoryId: ids.category, itemId: ids.item, quantity: 3 }]), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(ok.calls.created.length, 1, "duplicate lines merge");
+  assert.equal(ok.calls.created[0].quantityApproved, 8);
+  assert.equal(ok.calls.created[0].verificationMethod, "MANUAL");
+  assert.equal(ok.calls.created[0].approvedBy, "admin1");
+  assert.equal(ok.calls.pushes[0].quantityUsed, 8);
+  assert.match(ok.calls.notes[0].message, /8 × Half Day Outing/);
+
+  const over = fixture(4);
+  const res2 = response();
+  await makeManualRedeem(over.deps)(body([{ categoryId: ids.category, itemId: ids.item, quantity: 8 }]), res2);
+  assert.equal(res2.statusCode, 400);
+  assert.match(res2.body.message, /only 6 left/);
+  assert.equal(over.calls.created.length, 0);
+
+  const empty = response();
+  await makeManualRedeem(fixture().deps)(body([{ categoryId: ids.category, itemId: ids.item, quantity: 0 }]), empty);
+  assert.equal(empty.statusCode, 400);
 });

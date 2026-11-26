@@ -239,4 +239,92 @@ function makeMemberVoucherBalance({ MembershipBooking, OfferCategory, VoucherRed
   };
 }
 
-module.exports = { makeListRedemptions, makeApproveRedemption, makeRejectRedemption, makeMemberVoucherBalance, usedQuantity };
+// Manual redeem from the admin panel: staff record vouchers a guest used at the counter
+// (e.g. 8 × Half Day Outing) without a code from the app. One Approved redemption per item.
+function makeManualRedeem({ VoucherRedeemtion, MembershipBooking, OfferCategory, notify, now = () => new Date() }) {
+  return async (req, res) => {
+    try {
+      const { membershipBookingId } = req.body || {};
+      const note = text(req.body?.note);
+      if (!isObjectId(membershipBookingId)) return res.status(400).json({ success: false, message: "Select a guest" });
+
+      // Merge duplicate lines for the same item and drop zero quantities.
+      const lines = new Map();
+      for (const entry of Array.isArray(req.body?.items) ? req.body.items : []) {
+        const quantity = Number(entry?.quantity);
+        if (!quantity) continue;
+        if (!isObjectId(entry?.categoryId) || !isObjectId(entry?.itemId)) return res.status(400).json({ success: false, message: "Invalid voucher" });
+        if (!Number.isInteger(quantity) || quantity < 1) return res.status(400).json({ success: false, message: "Quantity must be a whole number" });
+        const key = `${entry.categoryId}:${entry.itemId}`;
+        lines.set(key, { categoryId: entry.categoryId, itemId: entry.itemId, quantity: (lines.get(key)?.quantity || 0) + quantity });
+      }
+      if (!lines.size) return res.status(400).json({ success: false, message: "Enter a quantity for at least one voucher" });
+
+      const booking = await MembershipBooking.findById(membershipBookingId).populate({ path: "membershipPlanId", select: "offers" });
+      if (!booking) return res.status(404).json({ success: false, message: "Membership not found" });
+      if (booking.status === "Cancelled") return res.status(400).json({ success: false, message: "Membership is cancelled" });
+
+      const planOfferIds = (booking.membershipPlanId?.offers || []).map(String);
+      const categoryIds = [...new Set([...lines.values()].map((l) => String(l.categoryId)))];
+      const offers = await OfferCategory.find({ _id: { $in: categoryIds } }).select("title items").lean();
+      const offersById = new Map(offers.map((offer) => [String(offer._id), offer]));
+
+      const resolved = [];
+      for (const line of lines.values()) {
+        const item = findItem(offersById.get(String(line.categoryId)), line.itemId);
+        if (!item) return res.status(404).json({ success: false, message: "Voucher no longer exists" });
+        if (!planOfferIds.includes(String(line.categoryId))) return res.status(400).json({ success: false, message: `${item.name} is not part of this guest's plan` });
+        const remaining = Math.max(Number(item.inventory || 0) - usedQuantity(booking, line.itemId), 0);
+        if (line.quantity > remaining) {
+          return res.status(400).json({ success: false, message: remaining ? `${item.name}: only ${remaining} left for this guest` : `${item.name}: no quantity left for this guest` });
+        }
+        resolved.push({ ...line, item });
+      }
+
+      const at = now();
+      const adminId = req.admin?._id || null;
+      const created = [];
+      for (const line of resolved) {
+        const redemption = await VoucherRedeemtion.create({
+          membershipBookingId: booking._id,
+          categoryId: line.categoryId,
+          itemId: line.itemId,
+          quantityRequested: line.quantity,
+          quantityApproved: line.quantity,
+          verificationMethod: "MANUAL",
+          status: "Approved",
+          requestedAt: at,
+          approvedAt: at,
+          approvedBy: adminId,
+          note,
+        });
+        created.push(redemption);
+        await MembershipBooking.updateOne(
+          { _id: booking._id },
+          { $push: { usedOffers: { categoryId: line.categoryId, itemId: line.itemId, redemptionId: redemption._id, quantityUsed: line.quantity, usedOn: at } } },
+        );
+      }
+
+      if (booking.userId) {
+        await notify({
+          userId: booking.userId,
+          title: "Voucher Redeemed",
+          message: `${resolved.map((l) => `${l.quantity} × ${l.item.name}`).join(", ")} redeemed at the front desk.`,
+          type: "general",
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "Vouchers redeemed",
+        data: resolved.map((l, i) => ({ redemptionId: created[i]._id, itemName: l.item.name, quantity: l.quantity })),
+      });
+    } catch (error) {
+      console.error("Manual voucher redeem failed:", error?.message);
+      return res.status(500).json({ success: false, message: "Unable to redeem vouchers" });
+    }
+  };
+}
+
+module.exports = { makeListRedemptions, makeApproveRedemption, makeRejectRedemption, makeMemberVoucherBalance, makeManualRedeem, usedQuantity };
+
